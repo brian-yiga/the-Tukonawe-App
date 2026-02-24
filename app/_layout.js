@@ -31,8 +31,11 @@ function RootLayoutNav() {
     >
       {!isAuthenticated && (
         <>
+          <Stack.Screen name="index" options={{ title: "Welcome" }} />
           <Stack.Screen name="Login" options={{ animationEnabled: false }} />
           <Stack.Screen name="SignUp" />
+          <Stack.Screen name="Welcome" />
+          <Stack.Screen name="Goals" />
           <Stack.Screen name="ForgotPassword" />
         </>
       )}

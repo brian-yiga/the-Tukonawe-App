@@ -1,36 +1,49 @@
-import { useEffect } from "react";
 import { useRouter } from "expo-router";
-import { collection, getDocs } from "firebase/firestore";
+import React from "react";
 import {
-  Image,
-  ImageBackground,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    ImageBackground,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import CustomButton from "../../components/CustomButton";
-import { db } from "../../config/firebaseConfig.js"; // Adjust path if needed
 import { COLORS } from "../../constants/colors";
+import { useAuth } from "../../context/AuthContext";
+import { signOut } from "firebase/auth";
+import { auth } from "../../config/firebaseConfig";
 
-export default function LandingPage() {
+export default function Profile() {
   const router = useRouter();
+  const { user, logout } = useAuth();
+  const [loading, setLoading] = React.useState(false);
 
-  useEffect(() => {
-    const testConnection = async () => {
-      try {
-        // This tries to read a collection named 'test' from your real Firestore
-        const querySnapshot = await getDocs(collection(db, "test"));
-        console.log("🔥 Firebase Connection Successful!");
-      } catch (error) {
-        console.error("❌ Firebase Connection Error:", error.message);
-        console.log("Check if your .env.local keys are correct!");
-      }
-    };
-
-    testConnection();
-  }, []);
+  const handleLogout = async () => {
+    Alert.alert("Log Out", "Are you sure you want to log out?", [
+      {
+        text: "Cancel",
+        onPress: () => {},
+        style: "cancel",
+      },
+      {
+        text: "Log Out",
+        onPress: async () => {
+          setLoading(true);
+          try {
+            await signOut(auth);
+            router.replace("/");
+          } catch (error) {
+            Alert.alert("Error", "Failed to log out. Please try again.");
+          } finally {
+            setLoading(false);
+          }
+        },
+        style: "destructive",
+      },
+    ]);
+  };
 
   return (
     <ImageBackground
@@ -40,42 +53,52 @@ export default function LandingPage() {
     >
       <View style={styles.overlay} />
       <SafeAreaView style={{ flex: 1 }}>
-        <TouchableOpacity
-          style={styles.skipButton}
-          onPress={() => router.push("/guest")}
-        >
-          <Text style={styles.skipText}>SKIP</Text>
-        </TouchableOpacity>
         <View style={styles.container}>
-          <View style={styles.logoSection}>
-            <Image
-              source={require("../../assets/images/logo-nobg.png")}
-              style={styles.logo}
-            />
-            <Text style={styles.title}>TUKONAWE</Text>
-            <Text style={styles.subtitle}>Calm Spaces</Text>
-          </View>
+          <Text style={styles.title}>Profile</Text>
 
-          <View style={styles.buttonSection}>
-            <CustomButton
-              title="Log In"
-              onPress={() => router.push("/Login")}
-            />
-            <CustomButton title="Sign Up" type="outline" />
-            <CustomButton title="GET HELP NOW" type="sos" />
-            <View style={styles.disclaimerContainer}>
-              <Text style={styles.disclaimerText}>
-                By tapping Sign Up/Log in you agree to the{" "}
+          <View style={styles.userCard}>
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarText}>
+                {user?.email?.[0]?.toUpperCase() || "U"}
               </Text>
-              <TouchableOpacity onPress={() => router.push("/TermsOfUse")}>
-                <Text style={styles.disclaimerLink}>terms of use</Text>
-              </TouchableOpacity>
-              <Text style={styles.disclaimerText}> and </Text>
-              <TouchableOpacity onPress={() => router.push("/TermsOfUse")}>
-                <Text style={styles.disclaimerLink}>privacy policy</Text>
-              </TouchableOpacity>
+            </View>
+
+            <View style={styles.userInfo}>
+              <Text style={styles.userEmail}>{user?.email}</Text>
+              <Text style={styles.userStatus}>
+                
+              </Text>
             </View>
           </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Account</Text>
+            <TouchableOpacity style={styles.menuItem}>
+              <Text style={styles.menuText}>Change Password</Text>
+              <Text style={styles.menuArrow}>›</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Settings</Text>
+            <TouchableOpacity style={styles.menuItem}>
+              <Text style={styles.menuText}>Notifications</Text>
+              <Text style={styles.menuArrow}>›</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem}>
+              <Text style={styles.menuText}>Privacy</Text>
+              <Text style={styles.menuArrow}>›</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.spacer} />
+
+          <CustomButton
+            title={loading ? "Logging Out..." : "Log Out"}
+            onPress={handleLogout}
+            disabled={loading}
+            type="sos"
+          />
         </View>
       </SafeAreaView>
     </ImageBackground>
@@ -88,34 +111,58 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
-  container: { flex: 1, padding: 25, justifyContent: "space-between" },
-  logoSection: { alignItems: "center", marginTop: 80 },
-  logo: { width: 155, height: 155, marginBottom: 30 },
+  container: { flex: 1, padding: 20, justifyContent: "flex-start" },
   title: {
     color: COLORS.mainColor,
-    fontSize: 32,
-    fontWeight: "900",
-    letterSpacing: 2,
+    fontSize: 28,
+    fontWeight: "700",
+    marginBottom: 24,
   },
-  subtitle: { color: COLORS.secondaryColor, fontSize: 18, fontWeight: "600" },
-  buttonSection: { marginBottom: 30 },
-  skipButton: { position: "absolute", top: 50, right: 25, zIndex: 10 },
-  skipText: { color: COLORS.secondaryColor, fontSize: 14, fontWeight: "600" },
-  disclaimerContainer: {
+  userCard: {
     flexDirection: "row",
-    flexWrap: "wrap",
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    alignItems: "center",
+  },
+  avatarPlaceholder: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: COLORS.mainColor,
     justifyContent: "center",
-    marginTop: 12,
+    alignItems: "center",
+    marginRight: 16,
   },
-  disclaimerText: {
-    color: "rgba(255, 255, 255, 0.6)",
-    fontSize: 13,
-    textAlign: "center",
-  },
-  disclaimerLink: {
-    color: COLORS.secondaryColor,
-    fontSize: 13,
+  avatarText: { color: "white", fontSize: 24, fontWeight: "700" },
+  userInfo: { flex: 1 },
+  userEmail: {
+    color: "white",
+    fontSize: 14,
     fontWeight: "600",
-    textDecorationLine: "underline",
+    marginBottom: 4,
   },
+  userStatus: { color: COLORS.secondaryColor, fontSize: 12 },
+  section: { marginBottom: 24 },
+  sectionTitle: {
+    color: "rgba(255, 255, 255, 0.6)",
+    fontSize: 12,
+    fontWeight: "600",
+    marginBottom: 8,
+    textTransform: "uppercase",
+  },
+  menuItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  menuText: { color: "white", fontSize: 14, fontWeight: "500" },
+  menuArrow: { color: "rgba(255, 255, 255, 0.4)", fontSize: 18 },
+  spacer: { flex: 1 },
 });

@@ -2,16 +2,15 @@ import { useRouter } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
 import {
-    Alert,
-    ImageBackground,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ImageBackground,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
 import CustomButton from "../components/CustomButton";
 import { auth } from "../config/firebaseConfig";
@@ -39,24 +38,7 @@ export default function Login() {
         password,
       );
 
-      // Check if email is verified
-      if (!userCredential.user.emailVerified) {
-        Alert.alert(
-          "Email Not Verified",
-          "Please verify your email before logging in. Check your inbox for a verification link.",
-          [
-            {
-              text: "OK",
-              onPress: () => {
-                signInWithEmailAndPassword(auth, email, password);
-              },
-            },
-          ],
-        );
-        return;
-      }
-
-      // Navigation will be handled automatically by the layout based on auth state
+      // Navigation to home page - user stays logged in via Firebase auth
       router.replace("/(tabs)");
     } catch (err) {
       let errorMessage = "Login failed";
@@ -88,7 +70,7 @@ export default function Login() {
           style={styles.container}
         >
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()}>
+            <TouchableOpacity onPress={() => router.replace("/")}>
               <Text style={styles.backText}>← Back</Text>
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Log In</Text>
