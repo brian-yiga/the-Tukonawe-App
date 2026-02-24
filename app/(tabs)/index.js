@@ -1,27 +1,55 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ImageBackground, Image, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
-import { COLORS } from '../../constants/colors';
-import CustomButton from '../../components/CustomButton';
+import { useEffect } from "react";
+import { useRouter } from "expo-router";
+import { collection, getDocs } from "firebase/firestore";
+import {
+  Image,
+  ImageBackground,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import CustomButton from "../../components/CustomButton";
+import { db } from "../../config/firebaseConfig.js"; // Adjust path if needed
+import { COLORS } from "../../constants/colors";
 
 export default function LandingPage() {
   const router = useRouter();
 
+  useEffect(() => {
+    const testConnection = async () => {
+      try {
+        // This tries to read a collection named 'test' from your real Firestore
+        const querySnapshot = await getDocs(collection(db, "test"));
+        console.log("🔥 Firebase Connection Successful!");
+      } catch (error) {
+        console.error("❌ Firebase Connection Error:", error.message);
+        console.log("Check if your .env.local keys are correct!");
+      }
+    };
+
+    testConnection();
+  }, []);
+
   return (
     <ImageBackground
-      source={require('../../assets/images/bgphoto.webp')}
+      source={require("../../assets/images/bgphoto.webp")}
       style={styles.backgroundImage}
       blurRadius={2}
     >
       <View style={styles.overlay} />
       <SafeAreaView style={{ flex: 1 }}>
-        <TouchableOpacity style={styles.skipButton} onPress={() => router.push('/guest')}>
+        <TouchableOpacity
+          style={styles.skipButton}
+          onPress={() => router.push("/guest")}
+        >
           <Text style={styles.skipText}>SKIP</Text>
         </TouchableOpacity>
         <View style={styles.container}>
           <View style={styles.logoSection}>
             <Image
-              source={require('../../assets/images/logo-nobg.png')}
+              source={require("../../assets/images/logo-nobg.png")}
               style={styles.logo}
             />
             <Text style={styles.title}>TUKONAWE</Text>
@@ -29,16 +57,21 @@ export default function LandingPage() {
           </View>
 
           <View style={styles.buttonSection}>
-            <CustomButton title="Log In" onPress={() => router.push('/Login')} />
+            <CustomButton
+              title="Log In"
+              onPress={() => router.push("/Login")}
+            />
             <CustomButton title="Sign Up" type="outline" />
             <CustomButton title="GET HELP NOW" type="sos" />
             <View style={styles.disclaimerContainer}>
-              <Text style={styles.disclaimerText}>By tapping Sign Up/Log in you agree to the </Text>
-              <TouchableOpacity onPress={() => router.push('/TermsOfUse')}>
+              <Text style={styles.disclaimerText}>
+                By tapping Sign Up/Log in you agree to the{" "}
+              </Text>
+              <TouchableOpacity onPress={() => router.push("/TermsOfUse")}>
                 <Text style={styles.disclaimerLink}>terms of use</Text>
               </TouchableOpacity>
               <Text style={styles.disclaimerText}> and </Text>
-              <TouchableOpacity onPress={() => router.push('/TermsOfUse')}>
+              <TouchableOpacity onPress={() => router.push("/TermsOfUse")}>
                 <Text style={styles.disclaimerLink}>privacy policy</Text>
               </TouchableOpacity>
             </View>
@@ -50,17 +83,39 @@ export default function LandingPage() {
 }
 
 const styles = StyleSheet.create({
-  backgroundImage: { flex: 1, width: '100%', height: '100%' },
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0, 0, 0, 0.5)' },
-  container: { flex: 1, padding: 25, justifyContent: 'space-between' },
-  logoSection: { alignItems: 'center', marginTop: 80 },
+  backgroundImage: { flex: 1, width: "100%", height: "100%" },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  container: { flex: 1, padding: 25, justifyContent: "space-between" },
+  logoSection: { alignItems: "center", marginTop: 80 },
   logo: { width: 155, height: 155, marginBottom: 30 },
-  title: { color: COLORS.mainColor, fontSize: 32, fontWeight: '900', letterSpacing: 2 },
-  subtitle: { color: COLORS.secondaryColor, fontSize: 18, fontWeight: '600' },
+  title: {
+    color: COLORS.mainColor,
+    fontSize: 32,
+    fontWeight: "900",
+    letterSpacing: 2,
+  },
+  subtitle: { color: COLORS.secondaryColor, fontSize: 18, fontWeight: "600" },
   buttonSection: { marginBottom: 30 },
-  skipButton: { position: 'absolute', top: 50, right: 25, zIndex: 10 },
-  skipText: { color: COLORS.secondaryColor, fontSize: 14, fontWeight: '600' },
-  disclaimerContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: 12 },
-  disclaimerText: { color: 'rgba(255, 255, 255, 0.6)', fontSize: 13, textAlign: 'center' },
-  disclaimerLink: { color: COLORS.secondaryColor, fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' }
+  skipButton: { position: "absolute", top: 50, right: 25, zIndex: 10 },
+  skipText: { color: COLORS.secondaryColor, fontSize: 14, fontWeight: "600" },
+  disclaimerContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    marginTop: 12,
+  },
+  disclaimerText: {
+    color: "rgba(255, 255, 255, 0.6)",
+    fontSize: 13,
+    textAlign: "center",
+  },
+  disclaimerLink: {
+    color: COLORS.secondaryColor,
+    fontSize: 13,
+    fontWeight: "600",
+    textDecorationLine: "underline",
+  },
 });

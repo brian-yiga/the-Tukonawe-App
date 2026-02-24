@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { sendPasswordResetEmail } from "firebase/auth";
 import { useState } from "react";
 import {
     Alert,
@@ -17,57 +17,44 @@ import CustomButton from "../components/CustomButton";
 import { auth } from "../config/firebaseConfig";
 import { COLORS } from "../constants/colors";
 
-export default function Login() {
+export default function ForgotPassword() {
   const router = useRouter();
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
 
-  const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      setError("Please enter both email and password");
+  const handleResetPassword = async () => {
+    if (!email.trim()) {
+      setError("Please enter your email address");
+      return;
+    }
+    if (!email.includes("@")) {
+      setError("Please enter a valid email");
       return;
     }
 
     setLoading(true);
     setError("");
     try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password,
+      await sendPasswordResetEmail(auth, email);
+      setSuccess(true);
+      Alert.alert(
+        "Check Your Email",
+        "We've sent a password reset link to your email. Please check your inbox.",
+        [
+          {
+            text: "OK",
+            onPress: () => router.push("/Login"),
+          },
+        ],
       );
-
-      // Check if email is verified
-      if (!userCredential.user.emailVerified) {
-        Alert.alert(
-          "Email Not Verified",
-          "Please verify your email before logging in. Check your inbox for a verification link.",
-          [
-            {
-              text: "OK",
-              onPress: () => {
-                signInWithEmailAndPassword(auth, email, password);
-              },
-            },
-          ],
-        );
-        return;
-      }
-
-      // Navigation will be handled automatically by the layout based on auth state
-      router.replace("/(tabs)");
     } catch (err) {
-      let errorMessage = "Login failed";
+      let errorMessage = "Failed to send reset email";
       if (err.code === "auth/user-not-found") {
         errorMessage = "No account found with this email";
-      } else if (err.code === "auth/wrong-password") {
-        errorMessage = "Incorrect password";
       } else if (err.code === "auth/invalid-email") {
         errorMessage = "Invalid email address";
-      } else if (err.code === "auth/too-many-requests") {
-        errorMessage = "Too many login attempts. Please try again later.";
       }
       setError(errorMessage);
     } finally {
@@ -91,13 +78,18 @@ export default function Login() {
             <TouchableOpacity onPress={() => router.back()}>
               <Text style={styles.backText}>← Back</Text>
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Log In</Text>
+            <Text style={styles.headerTitle}>Reset Password</Text>
             <View style={{ width: 50 }} />
           </View>
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
           <View style={styles.form}>
+            <Text style={styles.description}>
+              Enter your email address and we'll send you a link to reset your
+              password.
+            </Text>
+
             <Text style={styles.label}>Email</Text>
             <TextInput
               value={email}
@@ -110,49 +102,17 @@ export default function Login() {
               editable={!loading}
             />
 
-            <Text style={[styles.label, { marginTop: 16 }]}>Password</Text>
-            <TextInput
-              value={password}
-              onChangeText={setPassword}
-              placeholder="••••••••"
-              placeholderTextColor={"rgba(255,255,255,0.5)"}
-              style={styles.input}
-              secureTextEntry
-              editable={!loading}
-            />
-
-            <TouchableOpacity
-              onPress={() => router.push("/ForgotPassword")}
-              style={{ alignSelf: "flex-end", marginTop: 8 }}
-            >
-              <Text style={styles.forgotLink}>Forgot password?</Text>
-            </TouchableOpacity>
-
             <CustomButton
-              title={loading ? "Logging In..." : "Log In"}
-              onPress={handleLogin}
+              title={loading ? "Sending..." : "Send Reset Link"}
+              onPress={handleResetPassword}
               disabled={loading}
             />
 
-            <View style={styles.signUpPrompt}>
-              <Text style={styles.signUpText}>Don't have an account? </Text>
-              <TouchableOpacity onPress={() => router.push("/SignUp")}>
-                <Text
-                  style={[
-                    styles.signUpText,
-                    { color: COLORS.secondaryColor, fontWeight: "600" },
-                  ]}
-                >
-                  Sign Up
-                </Text>
-              </TouchableOpacity>
-            </View>
-
             <TouchableOpacity
-              onPress={() => router.push("/TermsOfUse")}
+              onPress={() => router.push("/Login")}
               style={{ marginTop: 16 }}
             >
-              <Text style={styles.smallLink}>Terms & Privacy</Text>
+              <Text style={styles.backToLogin}>Back to Log In</Text>
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -177,13 +137,19 @@ const styles = StyleSheet.create({
   backText: { color: COLORS.secondaryColor, fontSize: 16, fontWeight: "600" },
   headerTitle: { color: COLORS.mainColor, fontSize: 20, fontWeight: "700" },
   form: { marginTop: 150 },
+  description: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 14,
+    marginBottom: 24,
+    lineHeight: 20,
+  },
   label: { color: "rgba(255,255,255,0.85)", fontSize: 12, marginBottom: 6 },
   input: {
     backgroundColor: "rgba(255,255,255,0.06)",
     borderRadius: 12,
     padding: 12,
     color: "white",
-    marginBottom: 4,
+    marginBottom: 20,
   },
   errorText: {
     color: "#ff6b6b",
@@ -191,21 +157,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingHorizontal: 4,
   },
-  smallLink: {
+  backToLogin: {
     color: COLORS.secondaryColor,
     fontSize: 12,
     textAlign: "center",
-  },
-  forgotLink: {
-    color: COLORS.secondaryColor,
-    fontSize: 12,
     fontWeight: "600",
-    marginBottom: 20,
   },
-  signUpPrompt: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 16,
-  },
-  signUpText: { color: "rgba(255,255,255,0.7)", fontSize: 12 },
 });
