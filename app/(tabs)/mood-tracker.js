@@ -1,0 +1,340 @@
+import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import {
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
+} from "react-native";
+import { LineChart } from "react-native-chart-kit";
+import YoutubePlayer from "react-native-youtube-iframe";
+import { db } from "../../config/firebaseConfig";
+import { COLORS } from "../../constants/theme";
+import { useAuth } from "../../context/AuthContext";
+import { moodToValue } from "./moodUtils";
+
+const screenWidth = Dimensions.get("window").width;
+
+export default function MoodTrackerScreen() {
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const [selectedMood, setSelectedMood] = useState(
+    params.initialMood || "calm",
+  );
+  const [reason, setReason] = useState("");
+  const [activeRange, setActiveRange] = useState("Weekly");
+  const [quote, setQuote] = useState({
+    text: "Loading inspiration...",
+    author: "",
+  });
+  const [scripture, setScripture] = useState({
+    text: "Loading word...",
+    ref: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const quoteRes = await fetch("https://zenquotes.io/api/today");
+      const quoteData = await quoteRes.json();
+      setQuote({ text: quoteData[0].q, author: quoteData[0].a });
+
+      const scripRes = await fetch("https://bible-api.com/psalm+23:1");
+      const scripData = await scripRes.json();
+      setScripture({ text: scripData.text.trim(), ref: scripData.reference });
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  const handleSaveMood = async () => {
+    if (!selectedMood) {
+      Alert.alert("Error", "Please select a mood before logging.");
+      return;
+    }
+    if (!user?.uid) {
+      Alert.alert("Error", "You must be logged in to save your mood.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await addDoc(collection(db, "mood_logs"), { // This creates the collection automatically on first save
+        userId: user.uid,
+        mood: selectedMood,
+        moodValue: moodToValue(selectedMood), // Convert mood to a numerical value
+        reason: reason,
+        createdAt: serverTimestamp(),
+      });
+      Alert.alert("Success", "Mood logged successfully!");
+      setReason(""); // Clear reason input
+      router.back(); // Go back to home screen
+    } catch (error) {
+      Alert.alert("Error", "Failed to save mood. Please try again.");
+      console.error("Error saving mood:", error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const renderMoodIcon = (mood, icon, color) => (
+    <TouchableOpacity
+      style={[
+        styles.moodBtn,
+        selectedMood === mood && { borderColor: color, borderWidth: 2 },
+      ]}
+      onPress={() => setSelectedMood(mood)}
+    >
+      <Ionicons name={icon} size={30} color={color} />
+      <Text style={styles.moodLabel}>{mood}</Text>
+    </TouchableOpacity>
+  );
+
+  return (
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: COLORS.bgGreen }]}
+    >
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={24} color={COLORS.sageGreen} />
+          <Text style={styles.backText}>Back to Home</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.title}>Mood Tracker</Text>
+
+        {/* Log Mood Section */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>How are you feeling right now?</Text>
+          <View style={styles.moodContainer}>
+            {renderMoodIcon("happy", "sunny-outline", "#FFB74D")}
+            {renderMoodIcon("calm", "leaf-outline", COLORS.sageGreen)}
+            {renderMoodIcon("sad", "water-outline", "#64B5F6")}
+            {renderMoodIcon("angry", "flame-outline", "#E57373")}
+          </View>
+
+          <Text style={styles.label}>Why are you feeling this way?</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Describe your thoughts..."
+            value={reason}
+            onChangeText={setReason}
+            multiline
+          />
+
+          <TouchableOpacity
+            style={styles.saveBtn}
+            onPress={handleSaveMood}
+            disabled={saving}
+          >
+            {saving ? <ActivityIndicator color="white" /> : <Text style={styles.saveBtnText}>Log Entry</Text>}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => router.push("/professional")}
+            style={styles.proLink}
+          >
+            <Text style={styles.proLinkText}>
+              Do you need to talk to a professional?
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Graph Section */}
+        <View style={styles.card}>
+          <View style={styles.rangeSelector}>
+            {["Daily", "Weekly", "Monthly"].map((range) => (
+              <TouchableOpacity
+                key={range}
+                onPress={() => setActiveRange(range)}
+                style={[
+                  styles.rangeBtn,
+                  activeRange === range && styles.activeRangeBtn,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.rangeText,
+                    activeRange === range && styles.activeRangeText,
+                  ]}
+                >
+                  {range}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <LineChart
+            data={{
+              labels: ["1", "2", "3", "4", "5"],
+              datasets: [{ data: [2, 4, 3, 5, 4] }],
+            }}
+            width={screenWidth - 80} // Adjusting for card padding
+            height={160}
+            chartConfig={{
+              backgroundColor: "#ffffff",
+              backgroundGradientFrom: "#ffffff",
+              backgroundGradientTo: "#ffffff",
+              color: (opacity = 1) => COLORS.sageGreen,
+              labelColor: (opacity = 1) => COLORS.textMuted,
+            }}
+            style={styles.chart}
+          />
+        </View>
+
+        {/* Daily Scripture & Quote */}
+        <View style={styles.card}>
+          <Text style={styles.subHeader}>Daily Scripture</Text>
+          <Text style={styles.scriptureText}>"{scripture.text}"</Text>
+          <Text style={styles.scriptureRef}>{scripture.ref}</Text>
+
+          <View style={styles.divider} />
+
+          <Text style={styles.subHeader}>Inspirational Quote</Text>
+          <Text style={styles.quoteText}>"{quote.text}"</Text>
+          <Text style={styles.quoteAuthor}>— {quote.author}</Text>
+        </View>
+
+        {/* Mood Booster Section */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Mood Booster</Text>
+          <Text style={styles.subtitle}>
+            Listen to some calming frequencies
+          </Text>
+          <View style={styles.videoContainer}>
+            <YoutubePlayer height={180} play={false} videoId={"lFcSrYw-ARY"} />
+          </View>
+        </View>
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: { flex: 1 },
+  container: { padding: 20 },
+  backBtn: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
+  backText: { marginLeft: 8, color: COLORS.sageGreen, fontWeight: "600" },
+  title: {
+    fontSize: 28,
+    fontWeight: "600",
+    color: COLORS.brownish,
+    marginBottom: 20,
+  },
+  card: {
+    backgroundColor: "white",
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 20,
+    elevation: 2,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: COLORS.textDark,
+    marginBottom: 15,
+  },
+  moodContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 20,
+  },
+  moodBtn: {
+    alignItems: "center",
+    padding: 10,
+    borderRadius: 15,
+    backgroundColor: "#F9F9F9",
+    width: "22%",
+  },
+  moodLabel: {
+    fontSize: 10,
+    marginTop: 5,
+    color: COLORS.textMuted,
+    textTransform: "capitalize",
+  },
+  label: {
+    fontSize: 14,
+    color: COLORS.textDark,
+    marginBottom: 8,
+    fontWeight: "500",
+  },
+  input: {
+    backgroundColor: "#F5F5F5",
+    borderRadius: 12,
+    padding: 12,
+    height: 80,
+    textAlignVertical: "top",
+  },
+  saveBtn: {
+    backgroundColor: COLORS.sageGreen,
+    padding: 15,
+    borderRadius: 15,
+    marginTop: 15,
+    alignItems: "center",
+  },
+  saveBtnText: { color: "white", fontWeight: "700" },
+  proLink: { marginTop: 15, alignSelf: "center" },
+  proLinkText: {
+    color: COLORS.mutedBlue,
+    textDecorationLine: "underline",
+    fontSize: 13,
+  },
+  rangeSelector: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginBottom: 15,
+  },
+  rangeBtn: {
+    paddingHorizontal: 15,
+    paddingVertical: 6,
+    borderRadius: 15,
+    marginHorizontal: 5,
+  },
+  activeRangeBtn: { backgroundColor: COLORS.sageGreen },
+  rangeText: { color: COLORS.textMuted, fontSize: 12 },
+  activeRangeText: { color: "white", fontWeight: "600" },
+  chart: { marginVertical: 8, borderRadius: 16 },
+  subHeader: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: COLORS.brownish,
+    marginBottom: 5,
+  },
+  scriptureText: {
+    fontStyle: "italic",
+    color: COLORS.textDark,
+    textAlign: "center",
+  },
+  scriptureRef: {
+    textAlign: "right",
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginTop: 5,
+  },
+  divider: { height: 1, backgroundColor: "#EEE", marginVertical: 15 },
+  quoteText: { color: COLORS.textDark, textAlign: "center" },
+  quoteAuthor: {
+    textAlign: "center",
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginTop: 5,
+  },
+  videoContainer: { borderRadius: 15, overflow: "hidden", marginTop: 10 },
+  subtitle: { fontSize: 12, color: COLORS.textMuted, marginBottom: 10 },
+});

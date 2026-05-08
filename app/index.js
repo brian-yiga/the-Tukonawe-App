@@ -8,8 +8,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import CustomButton from "../components/CustomButton"; 
-import { COLORS } from "../constants/colors";
+import CustomButton from "../components/CustomButton";
+import { COLORS } from "../constants/theme";
+
 export default function LandingPage() {
   const router = useRouter();
 
@@ -19,11 +20,11 @@ export default function LandingPage() {
       style={styles.backgroundImage}
       blurRadius={2}
     >
-      <View style={styles.overlay} />
+      <View style={[styles.overlay, { backgroundColor: COLORS.overlay }]} />
       <SafeAreaView style={{ flex: 1 }}>
         <TouchableOpacity
           style={styles.skipButton}
-          onPress={() => router.push("/guest")}
+          onPress={() => router.push("/(tabs)/home")}
         >
           <Text style={styles.skipText}>SKIP</Text>
         </TouchableOpacity>
@@ -33,8 +34,8 @@ export default function LandingPage() {
               source={require("../assets/images/logo-nobg.png")}
               style={styles.logo}
             />
-            <Text style={styles.title}>TUKONAWE</Text>
-            <Text style={styles.subtitle}>Calm Spaces</Text>
+            <Text style={styles.title}>theCalmSpace</Text>
+            <Text style={styles.subtitle}>Your Mental Health Companion</Text>
           </View>
 
           <View style={styles.buttonSection}>
@@ -47,7 +48,11 @@ export default function LandingPage() {
               type="outline"
               onPress={() => router.push("/SignUp")}
             />
-            <CustomButton title="GET HELP NOW" type="sos" />
+            <CustomButton
+              title="GET HELP NOW"
+              type="sos"
+              onPress={() => router.push("/(tabs)/professional")}
+            />
             <View style={styles.disclaimerContainer}>
               <Text style={styles.disclaimerText}>
                 By tapping Sign Up/Log in you agree to the{" "}
@@ -71,21 +76,20 @@ const styles = StyleSheet.create({
   backgroundImage: { flex: 1, width: "100%", height: "100%" },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   container: { flex: 1, padding: 25, justifyContent: "space-between" },
   logoSection: { alignItems: "center", marginTop: 80 },
   logo: { width: 155, height: 155, marginBottom: 30 },
   title: {
-    color: COLORS.mainColor,
+    color: COLORS.white,
     fontSize: 32,
-    fontWeight: "900",
-    letterSpacing: 2,
+    fontWeight: "300",
+    letterSpacing: 1,
   },
-  subtitle: { color: COLORS.secondaryColor, fontSize: 18, fontWeight: "600" },
+  subtitle: { color: COLORS.sageGreen, fontSize: 16, marginTop: 5 },
   buttonSection: { marginBottom: 30 },
   skipButton: { position: "absolute", top: 50, right: 25, zIndex: 10 },
-  skipText: { color: COLORS.secondaryColor, fontSize: 14, fontWeight: "600" },
+  skipText: { color: COLORS.sageGreen, fontSize: 14, fontWeight: "600" },
   disclaimerContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -98,7 +102,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   disclaimerLink: {
-    color: COLORS.secondaryColor,
+    color: COLORS.sageGreen,
     fontSize: 13,
     fontWeight: "600",
     textDecorationLine: "underline",

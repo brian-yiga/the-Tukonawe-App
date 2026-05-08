@@ -1,14 +1,14 @@
 import { useRouter } from "expo-router";
 import {
-    ImageBackground,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  ImageBackground,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import CustomButton from "../components/CustomButton";
-import { COLORS } from "../constants/colors";
+import { COLORS } from "../constants/theme";
 
 export default function Welcome() {
   const router = useRouter();
@@ -27,13 +27,13 @@ export default function Welcome() {
       <SafeAreaView style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.container}>
           <View style={styles.content}>
-            <Text style={styles.welcomeTitle}>Welcome to TUKONAWE</Text>
-            <Text style={styles.welcomeSubtitle}>Calm Spaces</Text>
+            <Text style={styles.welcomeTitle}>Welcome to theCalmSpace</Text>
+            <Text style={styles.welcomeSubtitle}>Your Journey Starts Here</Text>
 
             <View style={styles.messageContainer}>
               <Text style={styles.messageText}>
-                TUKONAWE is your personal mental health companion designed to
-                create calm spaces in your life.
+                theCalmSpace is your personal mental health companion designed
+                to create calm spaces in your life.
               </Text>
               <Text style={styles.messageText}>
                 Whether you're facing stress, anxiety, or just need a moment of
@@ -74,14 +74,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   welcomeTitle: {
-    color: COLORS.mainColor,
+    color: COLORS.warmNeutral,
     fontSize: 28,
-    fontWeight: "700",
+    fontWeight: "300",
     marginBottom: 8,
     textAlign: "center",
   },
   welcomeSubtitle: {
-    color: COLORS.secondaryColor,
+    color: COLORS.sageGreen,
     fontSize: 18,
     fontWeight: "600",
     marginBottom: 32,

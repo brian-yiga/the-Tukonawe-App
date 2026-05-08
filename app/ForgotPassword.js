@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import CustomButton from "../components/CustomButton";
 import { auth } from "../config/firebaseConfig";
-import { COLORS } from "../constants/colors";
+import { COLORS } from "../constants/theme";
 
 export default function ForgotPassword() {
   const router = useRouter();
@@ -134,8 +134,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
-  backText: { color: COLORS.secondaryColor, fontSize: 16, fontWeight: "600" },
-  headerTitle: { color: COLORS.mainColor, fontSize: 20, fontWeight: "700" },
+  backText: { color: COLORS.sageGreen, fontSize: 16, fontWeight: "600" },
+  headerTitle: { color: COLORS.warmNeutral, fontSize: 20, fontWeight: "300" },
   form: { marginTop: 150 },
   description: {
     color: "rgba(255,255,255,0.7)",
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   backToLogin: {
-    color: COLORS.secondaryColor,
+    color: COLORS.sageGreen,
     fontSize: 12,
     textAlign: "center",
     fontWeight: "600",

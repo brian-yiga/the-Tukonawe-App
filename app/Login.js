@@ -10,11 +10,11 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import CustomButton from "../components/CustomButton";
 import { auth } from "../config/firebaseConfig";
-import { COLORS } from "../constants/colors";
+import { COLORS } from "../constants/theme";
 
 export default function Login() {
   const router = useRouter();
@@ -39,7 +39,7 @@ export default function Login() {
       );
 
       // Navigation to home page - user stays logged in via Firebase auth
-      router.replace("/(tabs)");
+      router.replace("/(tabs)/home");
     } catch (err) {
       let errorMessage = "Login failed";
       if (err.code === "auth/user-not-found") {
@@ -122,7 +122,7 @@ export default function Login() {
                 <Text
                   style={[
                     styles.signUpText,
-                    { color: COLORS.secondaryColor, fontWeight: "600" },
+                    { color: COLORS.sageGreen, fontWeight: "600" },
                   ]}
                 >
                   Sign Up
@@ -156,8 +156,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
-  backText: { color: COLORS.secondaryColor, fontSize: 16, fontWeight: "600" },
-  headerTitle: { color: COLORS.mainColor, fontSize: 20, fontWeight: "700" },
+  backText: { color: COLORS.sageGreen, fontSize: 16, fontWeight: "600" },
+  headerTitle: { color: COLORS.warmNeutral, fontSize: 20, fontWeight: "300" },
   form: { marginTop: 150 },
   label: { color: "rgba(255,255,255,0.85)", fontSize: 12, marginBottom: 6 },
   input: {
@@ -174,12 +174,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   smallLink: {
-    color: COLORS.secondaryColor,
+    color: COLORS.sageGreen,
     fontSize: 12,
     textAlign: "center",
   },
   forgotLink: {
-    color: COLORS.secondaryColor,
+    color: COLORS.sageGreen,
     fontSize: 12,
     fontWeight: "600",
     marginBottom: 20,

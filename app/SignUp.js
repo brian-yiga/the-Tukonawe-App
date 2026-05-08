@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import CustomButton from "../components/CustomButton";
 import { auth } from "../config/firebaseConfig";
-import { COLORS } from "../constants/colors";
+import { COLORS } from "../constants/theme";
 
 export default function SignUp() {
   const router = useRouter();
@@ -146,7 +146,7 @@ export default function SignUp() {
                 <Text
                   style={[
                     styles.signInText,
-                    { color: COLORS.secondaryColor, fontWeight: "600" },
+                    { color: COLORS.sageGreen, fontWeight: "600" },
                   ]}
                 >
                   Log In
@@ -173,8 +173,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
-  backText: { color: COLORS.secondaryColor, fontSize: 16, fontWeight: "600" },
-  headerTitle: { color: COLORS.mainColor, fontSize: 20, fontWeight: "700" },
+  backText: { color: COLORS.sageGreen, fontSize: 16, fontWeight: "600" },
+  headerTitle: { color: COLORS.warmNeutral, fontSize: 20, fontWeight: "300" },
   form: { marginTop: 100 },
   label: { color: "rgba(255,255,255,0.85)", fontSize: 12, marginBottom: 6 },
   input: {

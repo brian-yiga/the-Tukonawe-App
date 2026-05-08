@@ -10,7 +10,7 @@ import {
   View,
 } from "react-native";
 import CustomButton from "../components/CustomButton";
-import { COLORS } from "../constants/colors";
+import { COLORS } from "../constants/theme";
 
 const GOAL_OPTIONS = [
   { id: 1, label: "Heal from past experiences" },
@@ -32,17 +32,17 @@ export default function Goals() {
     setSelectedGoals((prev) =>
       prev.includes(goalId)
         ? prev.filter((id) => id !== goalId)
-        : [...prev, goalId]
+        : [...prev, goalId],
     );
   };
 
   const handleNext = () => {
     // TODO: Save selected goals to user profile or context
-    router.push("/(tabs)");
+    router.push("/(tabs)/home");
   };
 
   const handleSkip = () => {
-    router.push("/(tabs)");
+    router.push("/(tabs)/home");
   };
 
   return (
@@ -54,10 +54,7 @@ export default function Goals() {
       <View style={styles.overlay} />
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.headerContainer}>
-          <TouchableOpacity
-            style={styles.skipButton}
-            onPress={handleSkip}
-          >
+          <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
             <Text style={styles.skipText}>SKIP</Text>
           </TouchableOpacity>
         </View>
@@ -79,16 +76,14 @@ export default function Goals() {
                 key={goal.id}
                 style={[
                   styles.goalOption,
-                  selectedGoals.includes(goal.id) &&
-                    styles.goalOptionSelected,
+                  selectedGoals.includes(goal.id) && styles.goalOptionSelected,
                 ]}
                 onPress={() => toggleGoal(goal.id)}
               >
                 <View
                   style={[
                     styles.checkbox,
-                    selectedGoals.includes(goal.id) &&
-                      styles.checkboxSelected,
+                    selectedGoals.includes(goal.id) && styles.checkboxSelected,
                   ]}
                 >
                   {selectedGoals.includes(goal.id) && (
@@ -98,8 +93,7 @@ export default function Goals() {
                 <Text
                   style={[
                     styles.goalLabel,
-                    selectedGoals.includes(goal.id) &&
-                      styles.goalLabelSelected,
+                    selectedGoals.includes(goal.id) && styles.goalLabelSelected,
                   ]}
                 >
                   {goal.label}
@@ -110,10 +104,7 @@ export default function Goals() {
         </ScrollView>
 
         <View style={styles.buttonContainer}>
-          <CustomButton
-            title="Next"
-            onPress={handleNext}
-          />
+          <CustomButton title="Next" onPress={handleNext} />
         </View>
       </SafeAreaView>
     </ImageBackground>
@@ -135,7 +126,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-end",
   },
   skipText: {
-    color: COLORS.secondaryColor,
+    color: COLORS.sageGreen,
     fontSize: 14,
     fontWeight: "600",
   },
@@ -148,9 +139,9 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
   title: {
-    color: COLORS.mainColor,
+    color: COLORS.warmNeutral,
     fontSize: 24,
-    fontWeight: "700",
+    fontWeight: "300", // Already 300, but ensuring it uses COLORS.warmNeutral
     marginBottom: 8,
     textAlign: "center",
   },
@@ -174,8 +165,8 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.1)",
   },
   goalOptionSelected: {
-    backgroundColor: `${COLORS.secondaryColor}20`,
-    borderColor: COLORS.secondaryColor,
+    backgroundColor: "rgba(163, 177, 138, 0.2)", // Hardcoded, but matches COLORS.sageGreen opacity
+    borderColor: COLORS.sageGreen,
   },
   checkbox: {
     width: 24,
@@ -188,8 +179,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   checkboxSelected: {
-    backgroundColor: COLORS.secondaryColor,
-    borderColor: COLORS.secondaryColor,
+    backgroundColor: COLORS.sageGreen,
+    borderColor: COLORS.sageGreen,
   },
   checkmark: {
     color: "white",
@@ -202,7 +193,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   goalLabelSelected: {
-    color: COLORS.mainColor,
+    color: COLORS.white,
     fontWeight: "600",
   },
   buttonContainer: {

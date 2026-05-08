@@ -1,7 +1,8 @@
 import { Stack } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
-import { COLORS } from "../constants/colors";
 import { AuthProvider, useAuth } from "../context/AuthContext";
+
+import { COLORS } from "../constants/theme";
 
 function RootLayoutNav() {
   const { isAuthenticated, loading } = useAuth();
@@ -13,10 +14,10 @@ function RootLayoutNav() {
           flex: 1,
           justifyContent: "center",
           alignItems: "center",
-          backgroundColor: COLORS.background,
+          backgroundColor: COLORS.bgGreen,
         }}
       >
-        <ActivityIndicator size="large" color={COLORS.mainColor} />
+        <ActivityIndicator size="large" color={COLORS.sageGreen} />
       </View>
     );
   }
@@ -25,16 +26,16 @@ function RootLayoutNav() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: COLORS.background },
+        contentStyle: { backgroundColor: COLORS.bgGreen },
       }}
-      initialRouteName={isAuthenticated ? "(tabs)" : "Login"}
+      initialRouteName={isAuthenticated ? "(tabs)/home" : "Login"}
     >
       {!isAuthenticated && (
         <>
           <Stack.Screen name="index" options={{ title: "Welcome" }} />
           <Stack.Screen name="Login" options={{ animationEnabled: false }} />
           <Stack.Screen name="SignUp" />
-          <Stack.Screen name="Welcome" />
+          <Stack.Screen name="Welcome" options={{ title: "theCalmSpace" }} />
           <Stack.Screen name="Goals" />
           <Stack.Screen name="ForgotPassword" />
         </>
