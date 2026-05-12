@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
 import {
     ActivityIndicator,
     Alert,
@@ -39,12 +39,52 @@ export default function MoodTrackerScreen() {
     text: "Loading word...",
     ref: "",
   });
+  const [chartData, setChartData] = useState({
+    labels: ["Log"],
+    datasets: [{ data: [3] }],
+  });
   const [saving, setSaving] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Functionalize the Graph logic
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    // Determine how many logs to show based on the active range
+    const rangeLimit = activeRange === "Daily" ? 12 : activeRange === "Weekly" ? 7 : 30;
+
+    const q = query(
+      collection(db, "mood_logs"),
+      where("userId", "==", user.uid),
+      orderBy("createdAt", "desc"),
+      limit(rangeLimit)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const rawData = snapshot.docs.map((doc) => doc.data());
+      
+      if (rawData.length > 0) {
+        // Reverse to show chronological order (left to right)
+        const values = rawData.map((d) => d.moodValue || 3).reverse();
+        const labels = rawData.map((d, index) => {
+          if (activeRange === "Weekly") {
+            // Try to get day of week if timestamp exists
+            const date = d.createdAt?.toDate();
+            return date ? date.toLocaleDateString('en-US', { weekday: 'short' }) : (index + 1).toString();
+          }
+          return (index + 1).toString();
+        }).reverse();
+
+        setChartData({ labels, datasets: [{ data: values }] });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user, activeRange]);
 
   const fetchData = async () => {
     try {
@@ -126,6 +166,7 @@ export default function MoodTrackerScreen() {
             {renderMoodIcon("calm", "leaf-outline", COLORS.sageGreen)}
             {renderMoodIcon("sad", "water-outline", "#64B5F6")}
             {renderMoodIcon("angry", "flame-outline", "#E57373")}
+            {renderMoodIcon("tired", "moon-outline", "#9575CD")}
           </View>
 
           <Text style={styles.label}>Why are you feeling this way?</Text>
@@ -183,6 +224,7 @@ export default function MoodTrackerScreen() {
               labels: ["1", "2", "3", "4", "5"],
               datasets: [{ data: [2, 4, 3, 5, 4] }],
             }}
+            data={chartData}
             width={screenWidth - 80} // Adjusting for card padding
             height={160}
             chartConfig={{
@@ -191,6 +233,14 @@ export default function MoodTrackerScreen() {
               backgroundGradientTo: "#ffffff",
               color: (opacity = 1) => COLORS.sageGreen,
               labelColor: (opacity = 1) => COLORS.textMuted,
+            }}
+            getDotColor={(dataPoint, index) => {
+              const data = chartData.datasets[0].data;
+              if (index === 0) return COLORS.sageGreen;
+              const prevValue = data[index - 1];
+              if (dataPoint > prevValue) return COLORS.mutedBlue; // Upward trend
+              if (dataPoint < prevValue) return COLORS.sos;       // Downward trend
+              return COLORS.sageGreen;                           // No change
             }}
             style={styles.chart}
           />
@@ -260,7 +310,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 15,
     backgroundColor: "#F9F9F9",
-    width: "22%",
+    width: "18%",
   },
   moodLabel: {
     fontSize: 10,

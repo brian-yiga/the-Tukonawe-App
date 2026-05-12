@@ -7,14 +7,14 @@ import {
     StyleSheet,
     Text,
     TouchableOpacity,
-    View
+    View,
 } from "react-native";
 import { COLORS } from "../../constants/theme";
 
 const TOOLS = [
   {
     id: "1",
-    title: "Mood Log",
+    title: "Mood Tracker",
     icon: "sunny-outline",
     color: "#E9EDC9",
     progress: "1/1",
@@ -30,7 +30,7 @@ const TOOLS = [
   },
   {
     id: "3",
-    title: "CBT Record",
+    title: "Thought Process",
     icon: "brain-outline",
     color: "#D4A373",
     progress: "New",
@@ -84,6 +84,10 @@ export default function ToolsScreen() {
   const handleToolPress = (toolId) => {
     if (toolId === "1") {
       router.push("/(tabs)/mood-tracker");
+    } else if (toolId === "2") {
+      router.push("/(tabs)/journal");
+    } else if (toolId === "3") {
+      router.push("/(tabs)/cbt-record");
     }
   };
 

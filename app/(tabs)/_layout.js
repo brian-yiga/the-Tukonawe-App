@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs, useRouter } from "expo-router";
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useState } from "react";
+import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { COLORS } from "../../constants/theme";
 
 export default function TabLayout() {
@@ -11,9 +11,9 @@ export default function TabLayout() {
   const handleQuickAction = (actionType) => {
     setFabModalVisible(false);
     if (actionType === "mood") {
-      router.push("/(tabs)/mood-tracker"); 
+      router.push("/(tabs)/mood-tracker");
     } else if (actionType === "thought") {
-      alert("Thought record coming soon!");
+      router.push("/(tabs)/cbt-record");
     }
   };
 
@@ -61,14 +61,17 @@ export default function TabLayout() {
             ),
           }}
         />
-        
+
         {/* Hidden screen/trigger for the FAB */}
         <Tabs.Screen
           name="fab-placeholder"
           options={{
             title: "",
             tabBarButton: (props) => (
-              <CustomFabButton {...props} onPress={() => setFabModalVisible(true)}>
+              <CustomFabButton
+                {...props}
+                onPress={() => setFabModalVisible(true)}
+              >
                 <Ionicons name="add" size={32} color="white" />
               </CustomFabButton>
             ),
@@ -93,10 +96,13 @@ export default function TabLayout() {
             ),
           }}
         />
-        
+
         {/* Hide internal screens from tab bar if necessary */}
         <Tabs.Screen name="profile" options={{ href: null }} />
         <Tabs.Screen name="mood-tracker" options={{ href: null }} />
+        <Tabs.Screen name="journal" options={{ href: null }} />
+        <Tabs.Screen name="cbt-record" options={{ href: null }} />
+        <Tabs.Screen name="cbt-history" options={{ href: null }} />
       </Tabs>
 
       <Modal
@@ -105,27 +111,35 @@ export default function TabLayout() {
         animationType="fade"
         onRequestClose={() => setFabModalVisible(false)}
       >
-        <TouchableOpacity 
-          style={styles.modalOverlay} 
-          activeOpacity={1} 
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
           onPress={() => setFabModalVisible(false)}
         >
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Quick Actions</Text>
-            
-            <TouchableOpacity 
-              style={styles.actionItem} 
-              onPress={() => handleQuickAction('mood')}
+
+            <TouchableOpacity
+              style={styles.actionItem}
+              onPress={() => handleQuickAction("mood")}
             >
-              <Ionicons name="happy-outline" size={24} color={COLORS.sageGreen} />
+              <Ionicons
+                name="happy-outline"
+                size={24}
+                color={COLORS.sageGreen}
+              />
               <Text style={styles.actionText}>Log Mood</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={styles.actionItem} 
-              onPress={() => handleQuickAction('thought')}
+            <TouchableOpacity
+              style={styles.actionItem}
+              onPress={() => handleQuickAction("thought")}
             >
-              <Ionicons name="journal-outline" size={24} color={COLORS.sageGreen} />
+              <Ionicons
+                name="journal-outline"
+                size={24}
+                color={COLORS.sageGreen}
+              />
               <Text style={styles.actionText}>Thought Record</Text>
             </TouchableOpacity>
           </View>
@@ -138,49 +152,49 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   fabContainer: {
     top: -20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   fabInner: {
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: COLORS.sageGreen,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     elevation: 5,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
+    alignItems: "center",
     paddingBottom: 100,
   },
   modalContent: {
-    width: '80%',
-    backgroundColor: 'white',
+    width: "80%",
+    backgroundColor: "white",
     borderRadius: 20,
     padding: 20,
-    alignItems: 'center',
+    alignItems: "center",
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.textDark,
     marginBottom: 20,
   },
   actionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: "#F0F0F0",
   },
   actionText: {
     marginLeft: 15,

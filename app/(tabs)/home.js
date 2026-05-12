@@ -1,9 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { collection, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
+import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
+import { collection, query, where, orderBy, limit, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
+    Alert,
     Dimensions,
     SafeAreaView,
     ScrollView,
@@ -34,6 +37,8 @@ export default function HomeScreen() {
   const [loadingScripture, setLoadingScripture] = useState(true);
   const [moodReason, setMoodReason] = useState("");
   const [journalEntry, setJournalEntry] = useState("");
+  const [journalImage, setJournalImage] = useState(null);
+  const [journalLocation, setJournalLocation] = useState(null);
   const [chartData, setChartData] = useState([3, 3, 3, 3, 3, 3, 3]);
   const [loadingChart, setLoadingChart] = useState(true);
 
@@ -94,6 +99,77 @@ export default function HomeScreen() {
       setScripture({ text: "Be still, and know that I am God.", ref: "Psalm 46:10" });
     } finally {
       setLoadingScripture(false);
+    }
+  };
+
+  const handlePickImage = async () => {
+    Alert.alert(
+      "Attach Photo",
+      "Choose an option",
+      [
+        {
+          text: "Camera",
+          onPress: async () => {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert("Permission to access camera is required!");
+              return;
+            }
+            const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [4, 3], quality: 1 });
+            if (!result.canceled) setJournalImage(result.assets[0].uri);
+          },
+        },
+        {
+          text: "Gallery",
+          onPress: async () => {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert("Permission to access gallery is required!");
+              return;
+            }
+            const result = await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, aspect: [4, 3], quality: 1 });
+            if (!result.canceled) setJournalImage(result.assets[0].uri);
+          },
+        },
+        { text: "Cancel", style: "cancel" },
+      ]
+    );
+  };
+
+  const handleGetLocation = async () => {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission to access location was denied');
+      return;
+    }
+    const loc = await Location.getCurrentPositionAsync({});
+    const address = await Location.reverseGeocodeAsync({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
+    if (address.length > 0) {
+      setJournalLocation(`${address[0].city || ''}, ${address[0].region || ''}`);
+    } else {
+      setJournalLocation(`${loc.coords.latitude.toFixed(2)}, ${loc.coords.longitude.toFixed(2)}`);
+    }
+  };
+
+  const handleSaveJournalEntry = async () => {
+    if (!journalEntry.trim()) {
+      Alert.alert("Empty Entry", "Please write something before saving.");
+      return;
+    }
+    try {
+      await addDoc(collection(db, "journalEntries"), {
+        userId: user.uid,
+        content: journalEntry,
+        createdAt: serverTimestamp(),
+        image: journalImage,
+        location: journalLocation,
+      });
+      setJournalEntry("");
+      setJournalImage(null);
+      setJournalLocation(null);
+      Alert.alert("Saved", "Your journal entry was saved successfully.");
+    } catch (e) {
+      Alert.alert("Error", "Could not save entry.");
     }
   };
 
@@ -169,6 +245,13 @@ export default function HomeScreen() {
               labelColor: (opacity = 1) => `rgba(109, 76, 65, ${opacity})`,
               propsForDots: { r: "4", strokeWidth: "2", stroke: COLORS.sageGreen }
             }}
+            getDotColor={(dataPoint, index) => {
+              if (index === 0) return COLORS.sageGreen;
+              const prevValue = chartData[index - 1];
+              if (dataPoint > prevValue) return COLORS.mutedBlue; // Upward trend
+              if (dataPoint < prevValue) return COLORS.sos;       // Downward trend
+              return COLORS.sageGreen;                           // No change
+            }}
             bezier
             style={{ marginVertical: 8, borderRadius: 16 }}
           />
@@ -214,14 +297,22 @@ export default function HomeScreen() {
             onChangeText={setJournalEntry}
           />
           <View style={styles.journalActions}>
-            <TouchableOpacity style={styles.journalActionBtn}>
-              <Ionicons name="image-outline" size={20} color={COLORS.sageGreen} />
+            <TouchableOpacity style={styles.journalActionBtn} onPress={handlePickImage}>
+              <Ionicons 
+                name={journalImage ? "image" : "image-outline"} 
+                size={20} 
+                color={journalImage ? COLORS.mutedBlue : COLORS.sageGreen} 
+              />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.journalActionBtn}>
-              <Ionicons name="location-outline" size={20} color={COLORS.sageGreen} />
+            <TouchableOpacity style={styles.journalActionBtn} onPress={handleGetLocation}>
+              <Ionicons 
+                name={journalLocation ? "location" : "location-outline"} 
+                size={20} 
+                color={journalLocation ? COLORS.mutedBlue : COLORS.sageGreen} 
+              />
             </TouchableOpacity>
             <View style={{ flex: 1 }} />
-            <TouchableOpacity style={styles.saveBtn}>
+            <TouchableOpacity style={styles.saveBtn} onPress={handleSaveJournalEntry}>
               <Text style={styles.saveBtnText}>Save Entry</Text>
             </TouchableOpacity>
           </View>
