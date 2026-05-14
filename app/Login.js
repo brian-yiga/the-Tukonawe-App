@@ -2,15 +2,15 @@ import { useRouter } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
 import {
-  ImageBackground,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ImageBackground,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import CustomButton from "../components/CustomButton";
 import { auth } from "../config/firebaseConfig";
@@ -157,15 +157,16 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   backText: { color: COLORS.sageGreen, fontSize: 16, fontWeight: "600" },
-  headerTitle: { color: COLORS.warmNeutral, fontSize: 20, fontWeight: "300" },
-  form: { marginTop: 150 },
-  label: { color: "rgba(255,255,255,0.85)", fontSize: 12, marginBottom: 6 },
+  headerTitle: { color: COLORS.warmNeutral, fontSize: 24, fontWeight: "500" },
+  form: { marginTop: 120 },
+  label: { color: "rgba(255,255,255,0.95)", fontSize: 14, marginBottom: 10 },
   input: {
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderRadius: 12,
-    padding: 12,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: 16,
+    padding: 16,
     color: "white",
-    marginBottom: 4,
+    marginBottom: 14,
+    fontSize: 16,
   },
   errorText: {
     color: "#ff6b6b",

@@ -3,7 +3,6 @@ import { sendPasswordResetEmail } from "firebase/auth";
 import { useState } from "react";
 import {
     Alert,
-    ImageBackground,
     KeyboardAvoidingView,
     Platform,
     SafeAreaView,
@@ -63,70 +62,61 @@ export default function ForgotPassword() {
   };
 
   return (
-    <ImageBackground
-      source={require("../assets/images/bgphoto.webp")}
-      style={styles.backgroundImage}
-      blurRadius={2}
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: COLORS.bgGreen }]}
     >
-      <View style={styles.overlay} />
-      <SafeAreaView style={{ flex: 1 }}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.container}
-        >
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()}>
-              <Text style={styles.backText}>← Back</Text>
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Reset Password</Text>
-            <View style={{ width: 50 }} />
-          </View>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.container}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Text style={styles.backText}>← Back</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Reset Password</Text>
+          <View style={{ width: 50 }} />
+        </View>
 
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-          <View style={styles.form}>
-            <Text style={styles.description}>
-              Enter your email address and we'll send you a link to reset your
-              password.
-            </Text>
+        <View style={styles.form}>
+          <Text style={styles.description}>
+            Enter your email address and we'll send you a link to reset your
+            password.
+          </Text>
 
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              value={email}
-              onChangeText={setEmail}
-              placeholder="you@example.com"
-              placeholderTextColor={"rgba(255,255,255,0.5)"}
-              style={styles.input}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              editable={!loading}
-            />
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            value={email}
+            onChangeText={setEmail}
+            placeholder="you@example.com"
+            placeholderTextColor={"rgba(255,255,255,0.5)"}
+            style={styles.input}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            editable={!loading}
+          />
 
-            <CustomButton
-              title={loading ? "Sending..." : "Send Reset Link"}
-              onPress={handleResetPassword}
-              disabled={loading}
-            />
+          <CustomButton
+            title={loading ? "Sending..." : "Send Reset Link"}
+            onPress={handleResetPassword}
+            disabled={loading}
+          />
 
-            <TouchableOpacity
-              onPress={() => router.push("/Login")}
-              style={{ marginTop: 16 }}
-            >
-              <Text style={styles.backToLogin}>Back to Log In</Text>
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </ImageBackground>
+          <TouchableOpacity
+            onPress={() => router.push("/Login")}
+            style={{ marginTop: 16 }}
+          >
+            <Text style={styles.backToLogin}>Back to Log In</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  backgroundImage: { flex: 1, width: "100%", height: "100%" },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
+  safeArea: { flex: 1 },
   container: { flex: 1, padding: 20, justifyContent: "flex-start" },
   header: {
     flexDirection: "row",
@@ -138,18 +128,19 @@ const styles = StyleSheet.create({
   headerTitle: { color: COLORS.warmNeutral, fontSize: 20, fontWeight: "300" },
   form: { marginTop: 150 },
   description: {
-    color: "rgba(255,255,255,0.7)",
-    fontSize: 14,
+    color: COLORS.textDark,
+    fontSize: 16,
     marginBottom: 24,
-    lineHeight: 20,
+    lineHeight: 24,
   },
-  label: { color: "rgba(255,255,255,0.85)", fontSize: 12, marginBottom: 6 },
+  label: { color: COLORS.textDark, fontSize: 14, marginBottom: 10 },
   input: {
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderRadius: 12,
-    padding: 12,
-    color: "white",
+    backgroundColor: "rgba(255,255,255,0.95)",
+    borderRadius: 16,
+    padding: 16,
+    color: COLORS.textDark,
     marginBottom: 20,
+    fontSize: 16,
   },
   errorText: {
     color: "#ff6b6b",

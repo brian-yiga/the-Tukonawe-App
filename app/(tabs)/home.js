@@ -1,13 +1,26 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import * as Location from "expo-location";
 import { useRouter } from "expo-router";
-import * as ImagePicker from 'expo-image-picker';
-import * as Location from 'expo-location';
-import { collection, query, where, orderBy, limit, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
+import {
+    addDoc,
+    collection,
+    deleteDoc,
+    doc,
+    limit,
+    onSnapshot,
+    orderBy,
+    query,
+    serverTimestamp,
+    where,
+} from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
     Dimensions,
+    Image,
+    Linking,
     SafeAreaView,
     ScrollView,
     StyleSheet,
@@ -23,16 +36,36 @@ import { COLORS } from "../../constants/theme";
 import { useAuth } from "../../context/AuthContext";
 
 const screenWidth = Dimensions.get("window").width;
+const COMMON_WHATSAPP_NUMBER = "+2560709203470";
+
+async function openWhatsApp(phone, message) {
+  const encoded = encodeURIComponent(message);
+  const appUrl = `whatsapp://send?phone=${phone}&text=${encoded}`;
+  const webUrl = `https://wa.me/${phone.replace(/\D/g, "")}?text=${encoded}`;
+
+  try {
+    const supported = await Linking.canOpenURL(appUrl);
+    return supported ? Linking.openURL(appUrl) : Linking.openURL(webUrl);
+  } catch (error) {
+    Alert.alert(
+      "Unable to open WhatsApp",
+      "Please ensure WhatsApp is installed or try again later.",
+    );
+  }
+}
 
 export default function HomeScreen() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const router = useRouter();
   const firstName = user?.email?.split("@")[0] || "Friend";
   const [quote, setQuote] = useState({
     text: "Tranquility comes from within.",
     author: "Reflection",
   });
-  const [scripture, setScripture] = useState({ text: "Loading word...", ref: "" });
+  const [scripture, setScripture] = useState({
+    text: "Loading word...",
+    ref: "",
+  });
   const [loadingQuote, setLoadingQuote] = useState(true);
   const [loadingScripture, setLoadingScripture] = useState(true);
   const [moodReason, setMoodReason] = useState("");
@@ -41,17 +74,59 @@ export default function HomeScreen() {
   const [journalLocation, setJournalLocation] = useState(null);
   const [chartData, setChartData] = useState([3, 3, 3, 3, 3, 3, 3]);
   const [loadingChart, setLoadingChart] = useState(true);
+  const [lastEntry, setLastEntry] = useState(null);
+  const [musicPlaying, setMusicPlaying] = useState(false);
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning";
+    if (hour < 17) return "Good Afternoon";
+    return "Good Evening";
+  };
+
+  const handleCheckIn = () => {
+    openWhatsApp(
+      COMMON_WHATSAPP_NUMBER,
+      "Hi, I would like a 5-minute check-in.",
+    );
+  };
+
+  const handlePlayMusic = () => {
+    setMusicPlaying((prev) => !prev);
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      "Log Out",
+      "Do you want to log out and return to the welcome screen?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Log Out",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await logout();
+              router.replace("/");
+            } catch (error) {
+              Alert.alert("Error", "Unable to log out right now.");
+            }
+          },
+        },
+      ],
+    );
+  };
 
   useEffect(() => {
     fetchQuote();
     fetchScripture();
-    
+
     if (user?.uid) {
       const q = query(
         collection(db, "mood_logs"),
         where("userId", "==", user.uid),
         orderBy("createdAt", "desc"),
-        limit(7)
+        limit(7),
       );
 
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -59,16 +134,36 @@ export default function HomeScreen() {
         querySnapshot.forEach((doc) => {
           moods.push(doc.data().moodValue || 3);
         });
-        
+
         if (moods.length > 0) {
           // Pad with default values if less than 7 logs exist, then reverse to show chronological order
-          const filledMoods = [...moods, ...Array(7 - moods.length).fill(3)].slice(0, 7).reverse();
+          const filledMoods = [...moods, ...Array(7 - moods.length).fill(3)]
+            .slice(0, 7)
+            .reverse();
           setChartData(filledMoods);
         }
         setLoadingChart(false);
       });
 
-      return () => unsubscribe();
+      const journalQ = query(
+        collection(db, "journalEntries"),
+        where("userId", "==", user.uid),
+        orderBy("createdAt", "desc"),
+        limit(1),
+      );
+
+      const unsubscribeJournal = onSnapshot(journalQ, (snapshot) => {
+        if (!snapshot.empty) {
+          setLastEntry({ ...snapshot.docs[0].data(), id: snapshot.docs[0].id });
+        } else {
+          setLastEntry(null);
+        }
+      });
+
+      return () => {
+        unsubscribe();
+        unsubscribeJournal();
+      };
     }
   }, []);
 
@@ -96,58 +191,80 @@ export default function HomeScreen() {
         setScripture({ text: data.text.trim(), ref: data.reference });
       }
     } catch (error) {
-      setScripture({ text: "Be still, and know that I am God.", ref: "Psalm 46:10" });
+      setScripture({
+        text: "Be still, and know that I am God.",
+        ref: "Psalm 46:10",
+      });
     } finally {
       setLoadingScripture(false);
     }
   };
 
   const handlePickImage = async () => {
-    Alert.alert(
-      "Attach Photo",
-      "Choose an option",
-      [
-        {
-          text: "Camera",
-          onPress: async () => {
-            const { status } = await ImagePicker.requestCameraPermissionsAsync();
-            if (status !== 'granted') {
-              Alert.alert("Permission to access camera is required!");
-              return;
-            }
-            const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [4, 3], quality: 1 });
-            if (!result.canceled) setJournalImage(result.assets[0].uri);
-          },
+    Alert.alert("Attach Photo", "Choose an option", [
+      {
+        text: "Camera",
+        onPress: async () => {
+          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          if (status !== "granted") {
+            Alert.alert("Permission to access camera is required!");
+            return;
+          }
+          const result = await ImagePicker.launchCameraAsync({
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
+          });
+          if (!result.canceled) setJournalImage(result.assets[0].uri);
         },
-        {
-          text: "Gallery",
-          onPress: async () => {
-            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            if (status !== 'granted') {
-              Alert.alert("Permission to access gallery is required!");
-              return;
-            }
-            const result = await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, aspect: [4, 3], quality: 1 });
-            if (!result.canceled) setJournalImage(result.assets[0].uri);
-          },
+      },
+      {
+        text: "Gallery",
+        onPress: async () => {
+          const { status } =
+            await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== "granted") {
+            Alert.alert("Permission to access gallery is required!");
+            return;
+          }
+          const result = await ImagePicker.launchImageLibraryAsync({
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
+          });
+          if (!result.canceled) setJournalImage(result.assets[0].uri);
         },
-        { text: "Cancel", style: "cancel" },
-      ]
-    );
+      },
+      { text: "Cancel", style: "cancel" },
+    ]);
   };
 
   const handleGetLocation = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission to access location was denied');
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission denied",
+        "Location permission is required to attach location. Would you like to open settings?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Open Settings", onPress: () => Linking.openSettings() },
+        ],
+      );
       return;
     }
     const loc = await Location.getCurrentPositionAsync({});
-    const address = await Location.reverseGeocodeAsync({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
+    const address = await Location.reverseGeocodeAsync({
+      latitude: loc.coords.latitude,
+      longitude: loc.coords.longitude,
+    });
     if (address.length > 0) {
-      setJournalLocation(`${address[0].city || ''}, ${address[0].region || ''}`);
+      setJournalLocation(
+        `${address[0].city || ""}, ${address[0].region || ""}`,
+      );
     } else {
-      setJournalLocation(`${loc.coords.latitude.toFixed(2)}, ${loc.coords.longitude.toFixed(2)}`);
+      setJournalLocation(
+        `${loc.coords.latitude.toFixed(2)}, ${loc.coords.longitude.toFixed(2)}`,
+      );
     }
   };
 
@@ -174,22 +291,71 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: COLORS.bgGreen }]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: COLORS.bgGreen }]}
+    >
       <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.greeting}>Good Morning,</Text>
-          <Text style={styles.name}>{firstName}.</Text>
+        <View style={styles.headerRow}>
+          <View style={styles.headerTextGroup}>
+            <Text style={styles.greeting}>{getGreeting()},</Text>
+            <View style={styles.nameRow}>
+              <Text style={styles.name}>{firstName}</Text>
+              <TouchableOpacity
+                onPress={handlePlayMusic}
+                style={styles.musicButton}
+              >
+                <Ionicons
+                  name={musicPlaying ? "pause-circle" : "play-circle"}
+                  size={26}
+                  color={COLORS.sageGreen}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <TouchableOpacity style={styles.logoutIcon} onPress={handleLogout}>
+            <Ionicons
+              name="log-out-outline"
+              size={24}
+              color={COLORS.textDark}
+            />
+          </TouchableOpacity>
         </View>
+
+        <TouchableOpacity
+          style={styles.findProfessionalBtn}
+          onPress={() => router.push("/professional")}
+        >
+          <Text style={styles.findProfessionalBtnText}>
+            Find A Professional
+          </Text>
+        </TouchableOpacity>
+
+        {musicPlaying && (
+          <View style={styles.musicPanel}>
+            <Text style={styles.musicLabel}>Soothing music is playing...</Text>
+            <YoutubePlayer
+              height={140}
+              play={musicPlaying}
+              videoId={"2OEL4P1Rz04"}
+            />
+          </View>
+        )}
 
         {/* Interactive Mood Check-in */}
         <View style={styles.sectionCard}>
-          <Text style={styles.feelingTitle}>How are you feeling today?</Text>
+          <Text style={styles.feelingTitle}>How Are You Feeling Today?</Text>
           <View style={styles.moodRow}>
             {["happy", "calm", "sad", "angry", "tired"].map((mood) => (
-              <TouchableOpacity 
-                key={mood} 
+              <TouchableOpacity
+                key={mood}
                 style={styles.moodItem}
-                onPress={() => router.push({ pathname: "/(tabs)/mood-tracker", params: { initialMood: mood } })}
+                onPress={() =>
+                  router.push({
+                    pathname: "/(tabs)/mood-tracker",
+                    params: { initialMood: mood },
+                  })
+                }
               >
                 <Ionicons
                   name={
@@ -206,7 +372,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
             ))}
           </View>
-          
+
           <TextInput
             style={styles.reasonInput}
             placeholder="What's making you feel this way?"
@@ -216,48 +382,67 @@ export default function HomeScreen() {
             multiline
           />
 
-          <TouchableOpacity 
-            onPress={() => router.push("/professional")}
-            style={styles.talkLink}
-          >
-            <Text style={styles.talkLinkText}>Do you want to talk?</Text>
+          <TouchableOpacity onPress={handleCheckIn} style={styles.talkLink}>
+            <Text style={styles.talkLinkText}>5 MINUTE CHECK IN</Text>
           </TouchableOpacity>
         </View>
 
         {/* Weekly Trend (Moved up) */}
-        <View style={[styles.sectionCard, { backgroundColor: '#F0F4EF' }]}>
+        <View style={[styles.sectionCard, { backgroundColor: "#F0F4EF" }]}>
           <Text style={styles.sectionTitle}>Weekly Trend</Text>
           {loadingChart ? (
-            <ActivityIndicator color={COLORS.sageGreen} style={{ height: 180 }} />
+            <ActivityIndicator
+              color={COLORS.sageGreen}
+              style={{ height: 180 }}
+            />
           ) : (
-          <LineChart
-            data={{
-              labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-              datasets: [{ data: chartData }]
-            }}
-            width={screenWidth - 48} // Adjusting for container padding (24*2)
-            height={180}
-            chartConfig={{
-              backgroundColor: "#F0F4EF",
-              backgroundGradientFrom: "#F0F4EF",
-              backgroundGradientTo: "#F0F4EF",
-              color: (opacity = 1) => `rgba(163, 177, 138, ${opacity})`,
-              labelColor: (opacity = 1) => `rgba(109, 76, 65, ${opacity})`,
-              propsForDots: { r: "4", strokeWidth: "2", stroke: COLORS.sageGreen }
-            }}
-            getDotColor={(dataPoint, index) => {
-              if (index === 0) return COLORS.sageGreen;
-              const prevValue = chartData[index - 1];
-              if (dataPoint > prevValue) return COLORS.mutedBlue; // Upward trend
-              if (dataPoint < prevValue) return COLORS.sos;       // Downward trend
-              return COLORS.sageGreen;                           // No change
-            }}
-            bezier
-            style={{ marginVertical: 8, borderRadius: 16 }}
-          />
+            <LineChart
+              data={{
+                labels: ["M", "T", "W", "T", "F", "S", "S"],
+                datasets: [{ data: chartData }],
+              }}
+              width={screenWidth - 88} // Account for page + card padding
+              height={150}
+              chartConfig={{
+                backgroundColor: "#d4e6f1",
+                backgroundGradientFrom: "#d4e6f1",
+                backgroundGradientTo: "#aacde0",
+                decimalPlaces: 0,
+                color: (opacity = 1) => `rgba(68, 113, 141, ${opacity})`,
+                labelColor: (opacity = 1) => `rgba(25, 49, 65, ${opacity})`,
+                propsForDots: {
+                  r: "5",
+                  strokeWidth: "2",
+                  stroke: COLORS.white,
+                },
+                propsForBackgroundLines: {
+                  stroke: "#aac6d6",
+                  strokeDasharray: "3",
+                },
+                withShadow: true,
+                withInnerLines: false,
+                withOuterLines: false,
+              }}
+              getDotColor={(dataPoint, index) => {
+                if (index === 0) return COLORS.sageGreen;
+                const prevValue = chartData[index - 1];
+                if (dataPoint > prevValue) return "#F7D046"; // Bright yellow for improvement
+                if (dataPoint < prevValue) return COLORS.sos; // Red for decline
+                return COLORS.sageGreen; // No change
+              }}
+              fromZero
+              bezier
+              style={{
+                marginVertical: 8,
+                borderRadius: 16,
+                marginHorizontal: -4,
+              }}
+            />
           )}
           <Text style={styles.moodSummary}>
-            {chartData[6] > chartData[0] ? "Your mood has been improving steadily!" : "Keep tracking to see your patterns."}
+            {chartData[6] > chartData[0]
+              ? "Your mood has been improving steadily!"
+              : "Keep tracking to see your patterns."}
           </Text>
         </View>
 
@@ -275,7 +460,7 @@ export default function HomeScreen() {
 
         {/* Your Scripture for The Day */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Scripture for The Day</Text>
+          <Text style={styles.sectionTitle}>Scripture For The Day</Text>
           {loadingScripture ? (
             <ActivityIndicator color={COLORS.sageGreen} />
           ) : (
@@ -296,32 +481,90 @@ export default function HomeScreen() {
             value={journalEntry}
             onChangeText={setJournalEntry}
           />
+          {journalImage && (
+            <Image source={{ uri: journalImage }} style={styles.journalImage} />
+          )}
           <View style={styles.journalActions}>
-            <TouchableOpacity style={styles.journalActionBtn} onPress={handlePickImage}>
-              <Ionicons 
-                name={journalImage ? "image" : "image-outline"} 
-                size={20} 
-                color={journalImage ? COLORS.mutedBlue : COLORS.sageGreen} 
+            <TouchableOpacity
+              style={styles.journalActionBtn}
+              onPress={handlePickImage}
+            >
+              <Ionicons
+                name={journalImage ? "image" : "image-outline"}
+                size={20}
+                color={journalImage ? COLORS.mutedBlue : COLORS.sageGreen}
               />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.journalActionBtn} onPress={handleGetLocation}>
-              <Ionicons 
-                name={journalLocation ? "location" : "location-outline"} 
-                size={20} 
-                color={journalLocation ? COLORS.mutedBlue : COLORS.sageGreen} 
+            <TouchableOpacity
+              style={styles.journalActionBtn}
+              onPress={handleGetLocation}
+            >
+              <Ionicons
+                name={journalLocation ? "location" : "location-outline"}
+                size={20}
+                color={journalLocation ? COLORS.mutedBlue : COLORS.sageGreen}
               />
             </TouchableOpacity>
             <View style={{ flex: 1 }} />
-            <TouchableOpacity style={styles.saveBtn} onPress={handleSaveJournalEntry}>
+            <TouchableOpacity
+              style={styles.saveBtn}
+              onPress={handleSaveJournalEntry}
+            >
               <Text style={styles.saveBtnText}>Save Entry</Text>
             </TouchableOpacity>
           </View>
-          <View style={styles.lastEntryBox}>
-            <Text style={styles.lastEntryLabel}>Last entry: Yesterday</Text>
-            <Text style={styles.lastEntryText} numberOfLines={1}>
-              I felt a deep sense of peace after the meditation...
+          <TouchableOpacity
+            style={styles.lastEntryBox}
+            onPress={() => {
+              if (lastEntry) {
+                Alert.alert("Last Entry", "What would you like to do?", [
+                  {
+                    text: "Edit",
+                    onPress: () => {
+                      setJournalEntry(lastEntry.content || "");
+                      setJournalImage(lastEntry.image || null);
+                      setJournalLocation(lastEntry.location || null);
+                    },
+                  },
+                  {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: async () => {
+                      try {
+                        await deleteDoc(
+                          doc(db, "journalEntries", lastEntry.id),
+                        );
+                        Alert.alert("Deleted", "Entry deleted successfully.");
+                      } catch (error) {
+                        Alert.alert("Error", "Failed to delete entry.");
+                      }
+                    },
+                  },
+                  { text: "Cancel", style: "cancel" },
+                ]);
+              }
+            }}
+          >
+            <Text style={styles.lastEntryLabel}>
+              {lastEntry
+                ? `Last entry: ${new Date(lastEntry.createdAt?.toDate()).toLocaleDateString()}`
+                : "No entries yet"}
             </Text>
-          </View>
+            {lastEntry?.image && (
+              <Image
+                source={{ uri: lastEntry.image }}
+                style={styles.lastEntryImage}
+              />
+            )}
+            <Text style={styles.lastEntryText} numberOfLines={2}>
+              {lastEntry?.content || "Start journaling your thoughts..."}
+            </Text>
+            {lastEntry?.location && (
+              <Text style={styles.lastEntryLocation}>
+                📍 {lastEntry.location}
+              </Text>
+            )}
+          </TouchableOpacity>
         </View>
 
         {/* Dynamic Daily Quote */}
@@ -350,20 +593,28 @@ const styles = StyleSheet.create({
   name: { fontSize: 32, fontWeight: "600", color: COLORS.sageGreen },
   feelingTitle: {
     fontSize: 18,
-    fontWeight: "600",
-    color: COLORS.brownish,
+    fontWeight: "700",
+    color: COLORS.textDark,
     marginBottom: 16,
   },
   sectionCard: {
-    backgroundColor: "white",
+    backgroundColor: COLORS.warmNeutral,
     borderRadius: 20,
     padding: 20,
     marginBottom: 24,
+    borderWidth: 1,
+    borderColor: "#cddce6",
     elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.08,
     shadowRadius: 10,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: COLORS.textDark,
+    marginBottom: 16,
   },
   moodRow: {
     flexDirection: "row",
@@ -373,7 +624,7 @@ const styles = StyleSheet.create({
   moodItem: { alignItems: "center" },
   moodText: { fontSize: 11, color: COLORS.textMuted, marginTop: 4 },
   reasonInput: {
-    backgroundColor: "#F9F9F9",
+    backgroundColor: COLORS.cardBg,
     borderRadius: 12,
     padding: 12,
     height: 60,
@@ -384,11 +635,55 @@ const styles = StyleSheet.create({
   talkLink: {
     marginTop: 12,
     alignSelf: "center",
+    backgroundColor: COLORS.sageGreen,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 18,
   },
   talkLinkText: {
-    color: COLORS.mutedBlue,
+    color: COLORS.white,
     fontSize: 13,
-    textDecorationLine: "underline",
+    textDecorationLine: "none",
+    fontWeight: "700",
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 14,
+  },
+  headerTextGroup: { flex: 1, paddingRight: 12 },
+  nameRow: { flexDirection: "row", alignItems: "center", marginTop: 6 },
+  musicButton: { marginLeft: 10, padding: 4 },
+  logoutIcon: {
+    padding: 10,
+    backgroundColor: COLORS.warmNeutral,
+    borderRadius: 16,
+  },
+  musicPanel: {
+    backgroundColor: "#eaf4f8",
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 20,
+  },
+  musicLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: COLORS.textDark,
+    marginBottom: 10,
+  },
+  findProfessionalBtn: {
+    marginTop: 16,
+    alignSelf: "flex-start",
+    backgroundColor: COLORS.sageGreen,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 18,
+  },
+  findProfessionalBtnText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: "700",
   },
   widgetTitle: {
     fontSize: 14,
@@ -427,11 +722,17 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
     marginBottom: 10,
   },
+  journalImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
   journalActions: { flexDirection: "row", alignItems: "center" },
   journalActionBtn: {
     padding: 8,
     marginRight: 10,
-    backgroundColor: "#F0F4EF",
+    backgroundColor: COLORS.cardBg,
     borderRadius: 8,
   },
   saveBtn: {
@@ -448,7 +749,14 @@ const styles = StyleSheet.create({
     borderTopColor: "#EEE",
   },
   lastEntryLabel: { fontSize: 10, color: COLORS.textMuted, marginBottom: 2 },
+  lastEntryImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 4,
+    marginBottom: 5,
+  },
   lastEntryText: { fontSize: 12, color: COLORS.textDark, fontStyle: "italic" },
+  lastEntryLocation: { fontSize: 10, color: COLORS.textMuted, marginTop: 2 },
   quoteCard: {
     padding: 24,
     backgroundColor: COLORS.sageGreen,

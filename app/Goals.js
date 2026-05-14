@@ -1,13 +1,12 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  ImageBackground,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import CustomButton from "../components/CustomButton";
 import { COLORS } from "../constants/theme";
@@ -46,68 +45,61 @@ export default function Goals() {
   };
 
   return (
-    <ImageBackground
-      source={require("../assets/images/bgphoto.webp")}
-      style={styles.backgroundImage}
-      blurRadius={2}
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: "#44718d" }]}
     >
-      <View style={styles.overlay} />
-      <SafeAreaView style={{ flex: 1 }}>
-        <View style={styles.headerContainer}>
-          <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-            <Text style={styles.skipText}>SKIP</Text>
-          </TouchableOpacity>
+      <View style={styles.headerContainer}>
+        <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
+          <Text style={styles.skipText}>SKIP</Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>What are your wellness goals?</Text>
+          <Text style={styles.subtitle}>Select all that resonate with you</Text>
         </View>
 
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.titleContainer}>
-            <Text style={styles.title}>What are your wellness goals?</Text>
-            <Text style={styles.subtitle}>
-              Select all that resonate with you
-            </Text>
-          </View>
-
-          <View style={styles.goalsContainer}>
-            {GOAL_OPTIONS.map((goal) => (
-              <TouchableOpacity
-                key={goal.id}
+        <View style={styles.goalsContainer}>
+          {GOAL_OPTIONS.map((goal) => (
+            <TouchableOpacity
+              key={goal.id}
+              style={[
+                styles.goalOption,
+                selectedGoals.includes(goal.id) && styles.goalOptionSelected,
+              ]}
+              onPress={() => toggleGoal(goal.id)}
+            >
+              <View
                 style={[
-                  styles.goalOption,
-                  selectedGoals.includes(goal.id) && styles.goalOptionSelected,
+                  styles.checkbox,
+                  selectedGoals.includes(goal.id) && styles.checkboxSelected,
                 ]}
-                onPress={() => toggleGoal(goal.id)}
               >
-                <View
-                  style={[
-                    styles.checkbox,
-                    selectedGoals.includes(goal.id) && styles.checkboxSelected,
-                  ]}
-                >
-                  {selectedGoals.includes(goal.id) && (
-                    <Text style={styles.checkmark}>✓</Text>
-                  )}
-                </View>
-                <Text
-                  style={[
-                    styles.goalLabel,
-                    selectedGoals.includes(goal.id) && styles.goalLabelSelected,
-                  ]}
-                >
-                  {goal.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
-
-        <View style={styles.buttonContainer}>
-          <CustomButton title="Next" onPress={handleNext} />
+                {selectedGoals.includes(goal.id) && (
+                  <Text style={styles.checkmark}>✓</Text>
+                )}
+              </View>
+              <Text
+                style={[
+                  styles.goalLabel,
+                  selectedGoals.includes(goal.id) && styles.goalLabelSelected,
+                ]}
+              >
+                {goal.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
-      </SafeAreaView>
-    </ImageBackground>
+      </ScrollView>
+
+      <View style={styles.buttonContainer}>
+        <CustomButton title="Next" onPress={handleNext} />
+      </View>
+    </SafeAreaView>
   );
 }
 
@@ -200,4 +192,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 25,
     paddingBottom: 25,
   },
+  safeArea: { flex: 1 },
 });

@@ -1,10 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import * as Location from "expo-location";
 import { useRouter } from "expo-router";
-import * as ImagePicker from 'expo-image-picker';
-import * as Location from 'expo-location';
 import {
     addDoc,
     collection,
+    deleteDoc,
+    doc,
     limit,
     onSnapshot,
     orderBy,
@@ -16,6 +18,8 @@ import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
+    Image,
+    Linking,
     SafeAreaView,
     ScrollView,
     StyleSheet,
@@ -81,69 +85,75 @@ export default function JournalScreen() {
   };
 
   const handlePickImage = async () => {
-    Alert.alert(
-      "Attach Photo",
-      "Choose an option",
-      [
-        {
-          text: "Camera",
-          onPress: async () => {
-            const { status } = await ImagePicker.requestCameraPermissionsAsync();
-            if (status !== 'granted') {
-              Alert.alert("Permission to access camera is required!");
-              return;
-            }
-            const result = await ImagePicker.launchCameraAsync({
-              allowsEditing: true,
-              aspect: [4, 3],
-              quality: 1,
-            });
-            if (!result.canceled) {
-              setImage(result.assets[0].uri);
-            }
-          },
+    Alert.alert("Attach Photo", "Choose an option", [
+      {
+        text: "Camera",
+        onPress: async () => {
+          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          if (status !== "granted") {
+            Alert.alert("Permission to access camera is required!");
+            return;
+          }
+          const result = await ImagePicker.launchCameraAsync({
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
+          });
+          if (!result.canceled) {
+            setImage(result.assets[0].uri);
+          }
         },
-        {
-          text: "Gallery",
-          onPress: async () => {
-            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            if (status !== 'granted') {
-              Alert.alert("Permission to access gallery is required!");
-              return;
-            }
-            const result = await ImagePicker.launchImageLibraryAsync({
-              allowsEditing: true,
-              aspect: [4, 3],
-              quality: 1,
-            });
-            if (!result.canceled) {
-              setImage(result.assets[0].uri);
-            }
-          },
+      },
+      {
+        text: "Gallery",
+        onPress: async () => {
+          const { status } =
+            await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== "granted") {
+            Alert.alert("Permission to access gallery is required!");
+            return;
+          }
+          const result = await ImagePicker.launchImageLibraryAsync({
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
+          });
+          if (!result.canceled) {
+            setImage(result.assets[0].uri);
+          }
         },
-        { text: "Cancel", style: "cancel" },
-      ]
-    );
+      },
+      { text: "Cancel", style: "cancel" },
+    ]);
   };
 
   const handleGetLocation = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission to access location was denied');
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission denied",
+        "Location permission is required to attach location. Would you like to open settings?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Open Settings", onPress: () => Linking.openSettings() },
+        ],
+      );
       return;
     }
 
     const loc = await Location.getCurrentPositionAsync({});
     const address = await Location.reverseGeocodeAsync({
       latitude: loc.coords.latitude,
-      longitude: loc.coords.longitude
+      longitude: loc.coords.longitude,
     });
-    
+
     if (address.length > 0) {
-      const currentLoc = `${address[0].city || ''}, ${address[0].region || ''}`;
+      const currentLoc = `${address[0].city || ""}, ${address[0].region || ""}`;
       setLocationData(currentLoc);
     } else {
-      setLocationData(`${loc.coords.latitude.toFixed(2)}, ${loc.coords.longitude.toFixed(2)}`);
+      setLocationData(
+        `${loc.coords.latitude.toFixed(2)}, ${loc.coords.longitude.toFixed(2)}`,
+      );
     }
   };
 
@@ -214,24 +224,42 @@ export default function JournalScreen() {
             onChangeText={setEntry}
           />
 
+          {image && <Image source={{ uri: image }} style={styles.entryImage} />}
+
           <View style={styles.actionRow}>
-            <TouchableOpacity style={styles.attachBtn} onPress={handlePickImage}>
+            <TouchableOpacity
+              style={styles.attachBtn}
+              onPress={handlePickImage}
+            >
               <Ionicons
                 name={image ? "image" : "image-outline"}
                 size={22}
                 color={image ? COLORS.mutedBlue : COLORS.sageGreen}
               />
-              <Text style={[styles.attachText, image && { color: COLORS.mutedBlue }]}>
+              <Text
+                style={[
+                  styles.attachText,
+                  image && { color: COLORS.mutedBlue },
+                ]}
+              >
                 {image ? "Attached" : "Photo"}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.attachBtn} onPress={handleGetLocation}>
+            <TouchableOpacity
+              style={styles.attachBtn}
+              onPress={handleGetLocation}
+            >
               <Ionicons
                 name={locationData ? "location" : "location-outline"}
                 size={22}
                 color={locationData ? COLORS.mutedBlue : COLORS.sageGreen}
               />
-              <Text style={[styles.attachText, locationData && { color: COLORS.mutedBlue }]}>
+              <Text
+                style={[
+                  styles.attachText,
+                  locationData && { color: COLORS.mutedBlue },
+                ]}
+              >
                 {locationData ? "Pinned" : "Location"}
               </Text>
             </TouchableOpacity>
@@ -264,20 +292,55 @@ export default function JournalScreen() {
         ) : (
           <View>
             {history.map((item) => (
-              <View key={item.id} style={styles.historyCard}>
+              <TouchableOpacity
+                key={item.id}
+                style={styles.historyCard}
+                onPress={() => {
+                  Alert.alert("Entry Options", "What would you like to do?", [
+                    {
+                      text: "Edit",
+                      onPress: () => {
+                        setEntry(item.content || "");
+                        setImage(item.image || null);
+                        setLocationData(item.location || null);
+                      },
+                    },
+                    {
+                      text: "Delete",
+                      style: "destructive",
+                      onPress: async () => {
+                        try {
+                          await deleteDoc(doc(db, "journalEntries", item.id));
+                          Alert.alert("Deleted", "Entry deleted successfully.");
+                        } catch (error) {
+                          Alert.alert("Error", "Failed to delete entry.");
+                        }
+                      },
+                    },
+                    { text: "Cancel", style: "cancel" },
+                  ]);
+                }}
+              >
                 <Text style={styles.historyDate}>
-                  {item.createdAt
-                    ?.toDate()
-                    .toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
+                  {item.createdAt?.toDate().toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
                 </Text>
+                {item.image && (
+                  <Image
+                    source={{ uri: item.image }}
+                    style={styles.historyImage}
+                  />
+                )}
                 <Text style={styles.historyContent} numberOfLines={3}>
                   {item.content}
                 </Text>
-              </View>
+                {item.location && (
+                  <Text style={styles.historyLocation}>📍 {item.location}</Text>
+                )}
+              </TouchableOpacity>
             ))}
             {history.length === 10 && (
               <TouchableOpacity style={styles.readMoreBtn}>
@@ -348,6 +411,12 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
     marginBottom: 15,
   },
+  entryImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
   actionRow: { flexDirection: "row", alignItems: "center" },
   attachBtn: {
     flexDirection: "row",
@@ -387,6 +456,13 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   historyContent: { fontSize: 14, color: COLORS.textDark, lineHeight: 20 },
+  historyImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 6,
+    marginBottom: 5,
+  },
+  historyLocation: { fontSize: 12, color: COLORS.textMuted, marginTop: 5 },
   emptyText: {
     textAlign: "center",
     color: COLORS.textMuted,

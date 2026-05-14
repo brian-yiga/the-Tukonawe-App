@@ -1,26 +1,26 @@
 import { Ionicons } from "@expo/vector-icons";
 import {
-  addDoc,
-  collection,
-  onSnapshot,
-  orderBy,
-  query,
-  serverTimestamp,
-  where,
+    addDoc,
+    collection,
+    onSnapshot,
+    orderBy,
+    query,
+    serverTimestamp,
+    where,
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { db } from "../../config/firebaseConfig";
 import { COLORS } from "../../constants/theme";
@@ -29,7 +29,7 @@ import { useAuth } from "../../context/AuthContext";
 const CATEGORIES = ["General", "Anxiety", "Depression", "Wins"];
 
 export default function ForumScreen() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("General");
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -54,6 +54,28 @@ export default function ForumScreen() {
 
     return () => unsubscribe();
   }, [activeTab]);
+
+  const handleLogout = () => {
+    Alert.alert(
+      "Log Out",
+      "Do you want to log out and return to the welcome screen?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Log Out",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await logout();
+              router.replace("/");
+            } catch (error) {
+              Alert.alert("Error", "Unable to log out right now.");
+            }
+          },
+        },
+      ],
+    );
+  };
 
   const handleCreatePost = async () => {
     if (!newPost.trim()) return;
@@ -106,38 +128,60 @@ export default function ForumScreen() {
   );
 
   return (
-    <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: COLORS.bgGreen }]}
-    >
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: "#E8F7EF" }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
       >
-        <Text style={styles.header}>Community</Text>
+        <View style={styles.headerRow}>
+          <View style={styles.headerBar}>
+            <Text style={styles.header}>Community</Text>
+            <Text style={styles.subHeader}>
+              A supportive space for honest check-ins and gentle encouragement.
+            </Text>
+          </View>
+          <TouchableOpacity style={styles.logoutIcon} onPress={handleLogout}>
+            <Ionicons
+              name="log-out-outline"
+              size={22}
+              color={COLORS.textDark}
+            />
+          </TouchableOpacity>
+        </View>
 
-        <View>
-          <FlatList
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            data={CATEGORIES}
-            keyExtractor={(item) => item}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                onPress={() => setActiveTab(item)}
-                style={[styles.tab, activeTab === item && styles.activeTab]}
+        <View style={styles.rulesCard}>
+          <Text style={styles.rulesTitle}>Community Guidelines</Text>
+          <Text style={styles.ruleItem}>
+            • Be respectful and kind to everyone.
+          </Text>
+          <Text style={styles.ruleItem}>
+            • Share support, not medical or legal advice.
+          </Text>
+          <Text style={styles.ruleItem}>
+            • No hate speech, bullying, or abusive language.
+          </Text>
+          <Text style={styles.ruleItem}>
+            • Do not post private contact details or personal data.
+          </Text>
+        </View>
+
+        <View style={styles.tabBarRow}>
+          {CATEGORIES.map((item) => (
+            <TouchableOpacity
+              key={item}
+              onPress={() => setActiveTab(item)}
+              style={[styles.tab, activeTab === item && styles.activeTab]}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === item && styles.activeTabText,
+                ]}
               >
-                <Text
-                  style={[
-                    styles.tabText,
-                    activeTab === item && styles.activeTabText,
-                  ]}
-                >
-                  {item}
-                </Text>
-              </TouchableOpacity>
-            )}
-            style={styles.tabBar}
-          />
+                {item}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
         {loading ? (
@@ -184,37 +228,94 @@ export default function ForumScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  container: { flex: 1, paddingHorizontal: 20 },
+  container: { flex: 1, paddingHorizontal: 16, paddingBottom: 120 },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginTop: 20,
+    marginBottom: 12,
+  },
+  headerBar: {
+    flex: 1,
+    backgroundColor: "#075E54",
+    borderRadius: 24,
+    paddingVertical: 20,
+    paddingHorizontal: 18,
+  },
   header: {
     fontSize: 28,
-    fontWeight: "600",
-    color: COLORS.sageGreen,
-    marginTop: 40,
-    marginBottom: 20,
+    fontWeight: "700",
+    color: COLORS.white,
+    marginBottom: 6,
   },
-  tabBar: { marginBottom: 15, maxHeight: 40 },
-  tab: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 10,
-    backgroundColor: "white",
+  subHeader: {
+    color: "rgba(255,255,255,0.85)",
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  rulesCard: {
+    backgroundColor: "#F3FFF7",
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#EEE",
+    borderColor: "#C8F0DF",
+  },
+  rulesTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: COLORS.sageGreen,
+    marginBottom: 10,
+  },
+  ruleItem: {
+    fontSize: 13,
+    color: COLORS.textMuted,
+    marginBottom: 6,
+    lineHeight: 20,
+  },
+  tabBarRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  tab: {
+    flex: 1,
+    marginHorizontal: 4,
+    paddingVertical: 10,
+    backgroundColor: "white",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#E8F1EE",
+    alignItems: "center",
   },
   activeTab: {
-    backgroundColor: COLORS.sageGreen,
-    borderColor: COLORS.sageGreen,
+    backgroundColor: "#25D366",
+    borderColor: "#25D366",
   },
-  tabText: { fontSize: 14, color: COLORS.textMuted },
-  activeTabText: { color: "white", fontWeight: "600" },
-  listContent: { paddingBottom: 100 },
-  postCard: {
-    backgroundColor: "white",
+  tabText: { fontSize: 13, color: COLORS.textMuted, fontWeight: "600" },
+  activeTabText: { color: "white" },
+  logoutIcon: {
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 10,
+    marginLeft: 12,
+    backgroundColor: COLORS.warmNeutral,
     borderRadius: 16,
+  },
+  listContent: { paddingBottom: 180 },
+  postCard: {
+    backgroundColor: "#F8FFF8",
+    borderRadius: 18,
     padding: 16,
     marginBottom: 12,
-    elevation: 1,
+    borderLeftWidth: 4,
+    borderLeftColor: "#25D366",
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 2,
   },
   postHeader: {
     flexDirection: "row",
@@ -224,7 +325,11 @@ const styles = StyleSheet.create({
   postAuthor: { fontWeight: "700", color: COLORS.sageGreen, fontSize: 13 },
   postTime: { color: COLORS.textMuted, fontSize: 11 },
   postContent: { fontSize: 15, color: COLORS.textDark, lineHeight: 22 },
-  postActions: { flexDirection: "row", justifyContent: "flex-end", marginTop: 10 },
+  postActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 10,
+  },
   actionBtn: { flexDirection: "row", alignItems: "center", marginLeft: 15 },
   actionText: { fontSize: 11, color: COLORS.textMuted, marginLeft: 4 },
   inputContainer: {

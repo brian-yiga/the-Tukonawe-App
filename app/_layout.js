@@ -1,6 +1,7 @@
 import { Stack } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 import { AuthProvider, useAuth } from "../context/AuthContext";
+import { SavedResourcesProvider } from "../context/SavedResourcesContext";
 
 import { COLORS } from "../constants/theme";
 
@@ -35,6 +36,7 @@ function RootLayoutNav() {
           <Stack.Screen name="index" options={{ title: "Welcome" }} />
           <Stack.Screen name="Login" options={{ animationEnabled: false }} />
           <Stack.Screen name="SignUp" />
+          <Stack.Screen name="GuestPreview" />
           <Stack.Screen name="Welcome" options={{ title: "theCalmSpace" }} />
           <Stack.Screen name="Goals" />
           <Stack.Screen name="ForgotPassword" />
@@ -51,7 +53,9 @@ function RootLayoutNav() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootLayoutNav />
+      <SavedResourcesProvider>
+        <RootLayoutNav />
+      </SavedResourcesProvider>
     </AuthProvider>
   );
 }

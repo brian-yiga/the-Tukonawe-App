@@ -1,12 +1,12 @@
 import { useRouter } from "expo-router";
 import {
-  Image,
-  ImageBackground,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Image,
+    ImageBackground,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import CustomButton from "../components/CustomButton";
 import { COLORS } from "../constants/theme";
@@ -24,9 +24,9 @@ export default function LandingPage() {
       <SafeAreaView style={{ flex: 1 }}>
         <TouchableOpacity
           style={styles.skipButton}
-          onPress={() => router.push("/(tabs)/home")}
+          onPress={() => router.push("/GuestPreview")}
         >
-          <Text style={styles.skipText}>SKIP</Text>
+          <Text style={styles.skipText}>PREVIEW</Text>
         </TouchableOpacity>
         <View style={styles.container}>
           <View style={styles.logoSection}>
@@ -49,10 +49,17 @@ export default function LandingPage() {
               onPress={() => router.push("/SignUp")}
             />
             <CustomButton
-              title="GET HELP NOW"
+              title="Find A Professional"
               type="sos"
-              onPress={() => router.push("/(tabs)/professional")}
+              onPress={() => router.push("/GuestPreview")}
             />
+            <View style={styles.guestNote}>
+              <Text style={styles.guestNoteText}>
+                As a guest, you can preview one featured professional and try a
+                quick check-in. Sign up for full access to all tools, resources,
+                and the community.
+              </Text>
+            </View>
             <View style={styles.disclaimerContainer}>
               <Text style={styles.disclaimerText}>
                 By tapping Sign Up/Log in you agree to the{" "}
@@ -88,6 +95,18 @@ const styles = StyleSheet.create({
   },
   subtitle: { color: COLORS.sageGreen, fontSize: 16, marginTop: 5 },
   buttonSection: { marginBottom: 30 },
+  guestNote: {
+    marginTop: 18,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderRadius: 16,
+    padding: 16,
+  },
+  guestNoteText: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 14,
+    lineHeight: 22,
+    textAlign: "center",
+  },
   skipButton: { position: "absolute", top: 50, right: 25, zIndex: 10 },
   skipText: { color: COLORS.sageGreen, fontSize: 14, fontWeight: "600" },
   disclaimerContainer: {

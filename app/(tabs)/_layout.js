@@ -103,6 +103,7 @@ export default function TabLayout() {
         <Tabs.Screen name="journal" options={{ href: null }} />
         <Tabs.Screen name="cbt-record" options={{ href: null }} />
         <Tabs.Screen name="cbt-history" options={{ href: null }} />
+        <Tabs.Screen name="resource-detail" options={{ href: null }} />
       </Tabs>
 
       <Modal
