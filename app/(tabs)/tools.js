@@ -1,9 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useContext, useState } from "react";
 import {
   Alert,
-  Image,
+  ImageBackground,
   Linking,
   Modal,
   SafeAreaView,
@@ -11,8 +11,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
-  ImageBackground,
+  View
 } from "react-native";
 import { COLORS } from "../../constants/theme";
 import { SavedResourcesContext } from "../../context/SavedResourcesContext";
@@ -328,7 +327,8 @@ const QUIZ_CONTENT = {
 
 export default function ToolsScreen() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("meditation");
+  const params = useLocalSearchParams();
+  const [activeTab, setActiveTab] = useState(params.activeTab || "meditation");
   const { savedResources } = useContext(SavedResourcesContext);
   const [quizVisible, setQuizVisible] = useState(false);
   const [activeQuiz, setActiveQuiz] = useState(null);
@@ -628,7 +628,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   heroSection: {
-    borderRadius:16,
+    borderRadius: 16,
     overflow: "hidden",
     marginBottom: 20,
     backgroundColor: COLORS.cardBg,

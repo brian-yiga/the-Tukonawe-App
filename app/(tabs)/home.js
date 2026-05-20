@@ -3,39 +3,40 @@ import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import {
-    addDoc,
-    collection,
-    deleteDoc,
-    doc,
-    limit,
-    onSnapshot,
-    orderBy,
-    query,
-    serverTimestamp,
-    where,
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  limit,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  where,
 } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    ImageBackground,
-    Linking,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    useWindowDimensions,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  ImageBackground,
+  Linking,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
 } from "react-native";
 import { LineChart } from "react-native-chart-kit";
 import YoutubePlayer from "react-native-youtube-iframe"; // For web compatibility, also run: npx expo install react-native-web-webview react-native-webview
 import { db } from "../../config/firebaseConfig";
 import { COLORS } from "../../constants/theme";
 import { useAuth } from "../../context/AuthContext";
+import { moodToValue } from "../../utils/moodUtils";
 
 const COMMON_WHATSAPP_NUMBER = "+2560709203470";
 
@@ -73,6 +74,8 @@ export default function HomeScreen() {
   });
   const [loadingQuote, setLoadingQuote] = useState(true);
   const [loadingScripture, setLoadingScripture] = useState(true);
+  const [selectedMood, setSelectedMood] = useState("");
+  const moodInputRef = useRef(null);
   const [moodReason, setMoodReason] = useState("");
   const [journalEntry, setJournalEntry] = useState("");
   const [journalImage, setJournalImage] = useState(null);
@@ -98,6 +101,80 @@ export default function HomeScreen() {
 
   const handlePlayMusic = () => {
     setMusicPlaying((prev) => !prev);
+  };
+
+  const moodIconName = (mood) => {
+    if (mood === "happy") return "sunny-outline";
+    if (mood === "calm") return "leaf-outline";
+    if (mood === "sad") return "water-outline";
+    if (mood === "angry") return "flame-outline";
+    return "moon-outline";
+  };
+
+  const moodIconColor = (mood) => {
+    if (mood === "happy") return "#F7D046";
+    if (mood === "calm") return COLORS.sageGreen;
+    if (mood === "sad") return "#64B5F6";
+    if (mood === "angry") return "#E57373";
+    return "#9575CD";
+  };
+
+  const handleMoodSelect = (mood) => {
+    setSelectedMood(mood);
+    setTimeout(() => {
+      moodInputRef.current?.focus();
+    }, 50);
+  };
+
+  const handleLogMood = async () => {
+    if (!selectedMood) {
+      Alert.alert(
+        "Choose a mood",
+        "Please select how you're feeling before logging.",
+      );
+      return;
+    }
+
+    if (!moodReason.trim()) {
+      Alert.alert(
+        "Add a reason",
+        "Please describe why you're feeling this way.",
+      );
+      return;
+    }
+
+    if (!user?.uid) {
+      if (Platform.OS === "web") {
+        alert("You must be logged in to save your mood.");
+        return;
+      }
+      Alert.alert("Error", "You must be logged in to save your mood.");
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, "mood_logs"), {
+        userId: user.uid,
+        mood: selectedMood,
+        moodValue: moodToValue(selectedMood),
+        reason: moodReason,
+        createdAt: serverTimestamp(),
+      });
+      setMoodReason("");
+      setSelectedMood("");
+      if (Platform.OS === "web") {
+        alert("Mood logged successfully!");
+      } else {
+        Alert.alert("Success", "Mood logged successfully!");
+      }
+    } catch (error) {
+      if (Platform.OS === "web") {
+        alert("Failed to save mood. Please try again.");
+      } else {
+        Alert.alert("Error", "Failed to save mood. Please try again.");
+      }
+      console.error("Error saving mood from Home:", error);
+    }
   };
 
   const handleLogout = () => {
@@ -368,6 +445,8 @@ export default function HomeScreen() {
           </View>
         </ImageBackground>
 
+        
+
         {musicPlaying && (
           <View style={styles.musicPanel}>
             <Text style={styles.musicLabel}>Soothing music is playing...</Text>
@@ -386,24 +465,21 @@ export default function HomeScreen() {
             {["happy", "calm", "sad", "angry", "tired"].map((mood) => (
               <TouchableOpacity
                 key={mood}
-                style={styles.moodItem}
-                onPress={() =>
-                  router.push({
-                    pathname: "/mood-tracker",
-                    params: { initialMood: mood },
-                  })
-                }
+                style={[
+                  styles.moodItem,
+                  selectedMood === mood && {
+                    borderColor: moodIconColor(mood),
+                    borderWidth: 2,
+                    borderRadius: 18,
+                    padding: 8,
+                  },
+                ]}
+                onPress={() => handleMoodSelect(mood)}
               >
                 <Ionicons
-                  name={
-                    mood === "happy"
-                      ? "sunny-outline"
-                      : mood === "calm"
-                        ? "leaf-outline"
-                        : "water-outline"
-                  }
+                  name={moodIconName(mood)}
                   size={32}
-                  color={COLORS.sageGreen}
+                  color={moodIconColor(mood)}
                 />
                 <Text style={styles.moodText}>{mood}</Text>
               </TouchableOpacity>
@@ -411,6 +487,7 @@ export default function HomeScreen() {
           </View>
 
           <TextInput
+            ref={moodInputRef}
             style={styles.reasonInput}
             placeholder="What's making you feel this way?"
             placeholderTextColor={COLORS.textMuted}
@@ -419,6 +496,10 @@ export default function HomeScreen() {
             multiline
           />
 
+          <TouchableOpacity onPress={handleLogMood} style={styles.logMoodBtn}>
+            <Text style={styles.logMoodText}>Log Mood</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity onPress={handleCheckIn} style={styles.talkLink}>
             <Text style={styles.talkLinkText}>5 MINUTE CHECK IN</Text>
           </TouchableOpacity>
@@ -426,7 +507,7 @@ export default function HomeScreen() {
 
         {/* Weekly Trend (Moved up) */}
         <View style={[styles.sectionCard, { backgroundColor: "#F0F4EF" }]}>
-          <Text style={styles.sectionTitle}>Weekly Trend</Text>
+          <Text style={styles.sectionTitle}>Your 7-Day Mood Trend</Text>
           {loadingChart ? (
             <ActivityIndicator
               color={COLORS.sageGreen}
@@ -435,7 +516,7 @@ export default function HomeScreen() {
           ) : (
             <LineChart
               data={{
-                labels: ["M", "T", "W", "T", "F", "S", "S"],
+                labels: ["1", "2", "3", "4", "5", "6", "7"],
                 datasets: [{ data: chartData }],
               }}
               width={screenWidth - 88} // Account for page + card padding
@@ -485,7 +566,7 @@ export default function HomeScreen() {
 
         {/* Daily Inspiration (YouTube) */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Daily Meditation</Text>
+          <Text style={styles.sectionTitle}>Daily Inspiration</Text>
           <View style={styles.videoContainer}>
             <YoutubePlayer
               height={200}
@@ -619,6 +700,24 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>
+            Take A Quick Wellness Check-In
+          </Text>
+          <Text style={styles.wellnessText}>
+            A short wellness check-in helps you notice how you feel, calm your
+            mind, and find the right videos or quizzes to support your day.
+          </Text>
+          <TouchableOpacity
+            style={styles.wellnessBtn}
+            onPress={() => router.push("/tools")}
+          >
+            <Text style={styles.wellnessBtnText}>
+              Explore Wellness Resources
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Dynamic Daily Quote */}
         <View style={styles.quoteCard}>
           {loadingQuote ? (
@@ -683,6 +782,37 @@ const styles = StyleSheet.create({
     color: COLORS.textDark,
     fontSize: 14,
     textAlignVertical: "top",
+  },
+  logMoodBtn: {
+    marginTop: 12,
+    alignSelf: "center",
+    backgroundColor: COLORS.warmNeutral,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 18,
+  },
+  logMoodText: {
+    color: COLORS.textDark,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  wellnessText: {
+    color: COLORS.textMuted,
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 14,
+  },
+  wellnessBtn: {
+    alignSelf: "flex-start",
+    backgroundColor: COLORS.sageGreen,
+    paddingVertical: 12,
+    paddingHorizontal: 22,
+    borderRadius: 18,
+  },
+  wellnessBtnText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: "700",
   },
   talkLink: {
     marginTop: 12,

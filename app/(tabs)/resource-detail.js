@@ -2,20 +2,27 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useContext, useEffect, useState } from "react";
 import {
-    Alert,
-    Image,
-    Linking,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  Linking,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import YoutubePlayer from "react-native-youtube-iframe";
 import { COLORS } from "../../constants/theme";
 import { SavedResourcesContext } from "../../context/SavedResourcesContext";
 
 const detailHero = require("../../assets/images/bgphoto.webp");
+
+const getYouTubeId = (url) => {
+  if (!url) return null;
+  const match = url.match(/[?&]v=([^&]+)/) || url.match(/youtu\.be\/([^?&]+)/);
+  return match ? match[1] : null;
+};
 
 const MOCK_RESOURCES = {
   meditation: [
@@ -104,6 +111,17 @@ export default function ResourceDetailScreen() {
   const router = useRouter();
   const { resourceId, category } = useLocalSearchParams();
   const [resource, setResource] = useState(null);
+  const [showPlayer, setShowPlayer] = useState(false);
+  const [playing, setPlaying] = useState(false);
+
+  const videoId = getYouTubeId(resource?.url);
+
+  const handleGoBack = () => {
+    router.push({
+      pathname: "/tools",
+      params: { activeTab: category || "meditation" },
+    });
+  };
   const { toggleSaveResource, isSaved } = useContext(SavedResourcesContext);
   const [isSavedLocal, setIsSavedLocal] = useState(false);
 
@@ -120,7 +138,7 @@ export default function ResourceDetailScreen() {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity onPress={handleGoBack}>
             <Ionicons name="arrow-back" size={24} color={COLORS.sageGreen} />
           </TouchableOpacity>
           <Text style={styles.errorText}>Resource not found</Text>
@@ -161,7 +179,7 @@ export default function ResourceDetailScreen() {
     >
       <ScrollView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity onPress={handleGoBack}>
             <Ionicons name="arrow-back" size={24} color={COLORS.textDark} />
           </TouchableOpacity>
           <TouchableOpacity
@@ -202,12 +220,46 @@ export default function ResourceDetailScreen() {
           <Text style={styles.subtitle}>{resource.subtitle}</Text>
 
           {resource.type !== "Quiz" && resource.url && (
-            <TouchableOpacity style={styles.playButton} onPress={handleOpenUrl}>
-              <Ionicons name="play-circle" size={48} color={COLORS.sageGreen} />
-              <Text style={styles.playText}>
-                {resource.type === "Article" ? "Read on YouTube" : "Play"}
-              </Text>
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity
+                style={styles.playButton}
+                onPress={() => {
+                  if (videoId) {
+                    setShowPlayer(true);
+                    setPlaying(true);
+                    return;
+                  }
+                  handleOpenUrl();
+                }}
+              >
+                <Ionicons
+                  name="play-circle"
+                  size={48}
+                  color={COLORS.sageGreen}
+                />
+                <Text style={styles.playText}>
+                  {videoId
+                    ? resource.type === "Article"
+                      ? "Open In App"
+                      : "Play In App"
+                    : resource.type === "Article"
+                      ? "Read on YouTube"
+                      : "Play"}
+                </Text>
+              </TouchableOpacity>
+              {showPlayer && videoId && (
+                <View style={styles.playerWrapper}>
+                  <YoutubePlayer
+                    height={220}
+                    play={playing}
+                    videoId={videoId}
+                    onChangeState={(state) => {
+                      if (state === "ended") setPlaying(false);
+                    }}
+                  />
+                </View>
+              )}
+            </>
           )}
 
           <View style={styles.infoBox}>
@@ -248,6 +300,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     justifyContent: "center",
     alignItems: "center",
+    marginRight: 45,
   },
   card: {
     backgroundColor: COLORS.white,
@@ -338,6 +391,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     color: COLORS.sageGreen,
+  },
+  playerWrapper: {
+    borderRadius: 20,
+    overflow: "hidden",
+    marginBottom: 20,
   },
   infoBox: {
     flexDirection: "row",
