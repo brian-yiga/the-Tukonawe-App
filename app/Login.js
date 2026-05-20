@@ -39,7 +39,7 @@ export default function Login() {
       );
 
       // Navigation to home page - user stays logged in via Firebase auth
-      router.replace("/(tabs)/home");
+      router.replace("/home");
     } catch (err) {
       let errorMessage = "Login failed";
       if (err.code === "auth/user-not-found") {

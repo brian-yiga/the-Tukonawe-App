@@ -4,6 +4,7 @@ import {
     Alert,
     Image,
     Linking,
+    Platform,
     SafeAreaView,
     ScrollView,
     StyleSheet,
@@ -25,6 +26,9 @@ async function openWhatsApp(phone, message) {
   const webUrl = `https://wa.me/${phone.replace(/\D/g, "")}?text=${encoded}`;
 
   try {
+    if (Platform.OS === 'web') {
+      return Linking.openURL(webUrl);
+    }
     const supported = await Linking.canOpenURL(appUrl);
     return supported ? Linking.openURL(appUrl) : Linking.openURL(webUrl);
   } catch (error) {

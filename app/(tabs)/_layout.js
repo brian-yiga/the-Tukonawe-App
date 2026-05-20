@@ -1,37 +1,44 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs, useRouter } from "expo-router";
-import { useState } from "react";
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, StyleSheet, TouchableOpacity, View } from "react-native";
 import { COLORS } from "../../constants/theme";
+import { useAuth } from "../../context/AuthContext";
 
 export default function TabLayout() {
-  const [isFabModalVisible, setFabModalVisible] = useState(false);
   const router = useRouter();
+  const { logout } = useAuth();
 
-  const handleQuickAction = (actionType) => {
-    setFabModalVisible(false);
-    if (actionType === "mood") {
-      router.push("/(tabs)/mood-tracker");
-    } else if (actionType === "thought") {
-      router.push("/(tabs)/cbt-record");
+  const handleLogout = () => {
+    if (!logout) {
+      Alert.alert("Logout unavailable");
+      return;
     }
+    Alert.alert(
+      "Log Out",
+      "Do you want to log out and return to the welcome screen?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Log Out",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await logout();
+              router.replace("/Welcome");
+            } catch (error) {
+              Alert.alert("Error", "Unable to log out right now.");
+            }
+          },
+        },
+      ],
+    );
   };
 
-  const CustomFabButton = ({ children, onPress }) => (
-    <TouchableOpacity
-      onPress={onPress}
-      style={styles.fabContainer}
-      activeOpacity={0.8}
-    >
-      <View style={styles.fabInner}>{children}</View>
-    </TouchableOpacity>
-  );
-
   return (
-    <>
+    <View style={styles.container}>
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: COLORS.sageGreen,
+          tabBarActiveTintColor: COLORS.mainTextColor,
           tabBarInactiveTintColor: "#8E8E93",
           headerShown: false,
           tabBarStyle: {
@@ -62,26 +69,10 @@ export default function TabLayout() {
           }}
         />
 
-        {/* Hidden screen/trigger for the FAB */}
-        <Tabs.Screen
-          name="fab-placeholder"
-          options={{
-            title: "",
-            tabBarButton: (props) => (
-              <CustomFabButton
-                {...props}
-                onPress={() => setFabModalVisible(true)}
-              >
-                <Ionicons name="add" size={32} color="white" />
-              </CustomFabButton>
-            ),
-          }}
-        />
-
         <Tabs.Screen
           name="forum"
           options={{
-            title: "Forum",
+            title: "Community",
             tabBarIcon: ({ color }) => (
               <Ionicons name="chatbubbles-outline" size={24} color={color} />
             ),
@@ -90,7 +81,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="professional"
           options={{
-            title: "Pro",
+            title: "Professional",
             tabBarIcon: ({ color }) => (
               <Ionicons name="medical-outline" size={24} color={color} />
             ),
@@ -105,101 +96,30 @@ export default function TabLayout() {
         <Tabs.Screen name="cbt-history" options={{ href: null }} />
         <Tabs.Screen name="resource-detail" options={{ href: null }} />
       </Tabs>
-
-      <Modal
-        visible={isFabModalVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setFabModalVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setFabModalVisible(false)}
-        >
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Quick Actions</Text>
-
-            <TouchableOpacity
-              style={styles.actionItem}
-              onPress={() => handleQuickAction("mood")}
-            >
-              <Ionicons
-                name="happy-outline"
-                size={24}
-                color={COLORS.sageGreen}
-              />
-              <Text style={styles.actionText}>Log Mood</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionItem}
-              onPress={() => handleQuickAction("thought")}
-            >
-              <Ionicons
-                name="journal-outline"
-                size={24}
-                color={COLORS.sageGreen}
-              />
-              <Text style={styles.actionText}>Thought Record</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-    </>
+      <TouchableOpacity style={styles.logoutIcon} onPress={handleLogout}>
+        <Ionicons name="log-out-outline" size={24} color={COLORS.textDark} />
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  fabContainer: {
-    top: -20,
+  container: { flex: 1 },
+  logoutIcon: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    width: 44,
+    height: 44,
+    padding: 10,
+    backgroundColor: COLORS.warmNeutral,
+    borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
-  },
-  fabInner: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: COLORS.sageGreen,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 5,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    paddingBottom: 100,
-  },
-  modalContent: {
-    width: "80%",
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 20,
-    alignItems: "center",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: COLORS.textDark,
-    marginBottom: 20,
-  },
-  actionItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    width: "100%",
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-  },
-  actionText: {
-    marginLeft: 15,
-    fontSize: 16,
-    color: COLORS.textDark,
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 4,
+    zIndex: 20,
   },
 });

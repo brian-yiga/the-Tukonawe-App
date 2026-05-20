@@ -29,6 +29,9 @@ async function openWhatsApp(phone, message) {
   const webUrl = `https://wa.me/${phone.replace(/\D/g, "")}?text=${encoded}`;
 
   try {
+    if (Platform.OS === "web") {
+      return Linking.openURL(webUrl);
+    }
     const supported = await Linking.canOpenURL(appUrl);
     return supported ? Linking.openURL(appUrl) : Linking.openURL(webUrl);
   } catch (error) {
@@ -137,6 +140,10 @@ export default function ProfessionalScreen() {
       message,
     } = listForm;
     if (!name.trim() || !email.trim() || !phone.trim() || !profession.trim()) {
+      if (Platform.OS === "web") {
+        alert("Name, email, phone and profession are required to join.");
+        return;
+      }
       Alert.alert(
         "Please fill all required fields",
         "Name, email, phone and profession are required to join.",
@@ -167,20 +174,33 @@ export default function ProfessionalScreen() {
 
       const result = await response.json();
       if (response.ok && result.success) {
-        Alert.alert(
-          "Request sent",
-          "Thank you! Your listing request has been submitted successfully.",
-        );
+        if (Platform.OS === "web") {
+          alert(
+            "Thank you! Your listing request has been submitted successfully.",
+          );
+        } else {
+          Alert.alert(
+            "Request sent",
+            "Thank you! Your listing request has been submitted successfully.",
+          );
+        }
         handleCancelJoin();
       } else {
         throw new Error(result.message || "Unable to send listing request.");
       }
     } catch (error) {
-      Alert.alert(
-        "Submission failed",
-        error.message ||
-          "Could not submit your request. Please try again later.",
-      );
+      if (Platform.OS === "web") {
+        alert(
+          error.message ||
+            "Could not submit your request. Please try again later.",
+        );
+      } else {
+        Alert.alert(
+          "Submission failed",
+          error.message ||
+            "Could not submit your request. Please try again later.",
+        );
+      }
     } finally {
       setListSubmitting(false);
     }
@@ -189,6 +209,10 @@ export default function ProfessionalScreen() {
   const handleSubmitRequest = () => {
     const { name, phone, preferredTime, notes } = requestForm;
     if (!name.trim() || !phone.trim()) {
+      if (Platform.OS === "web") {
+        alert("Please complete your name and phone number.");
+        return;
+      }
       Alert.alert("Please complete your name and phone number.");
       return;
     }
@@ -246,13 +270,12 @@ export default function ProfessionalScreen() {
               Therapists, counselors, and trusted care partners.
             </Text>
           </View>
-          <TouchableOpacity
-            style={styles.refreshBtn}
-            onPress={() => setSearch("")}
-          >
-            <Ionicons name="reload" size={20} color={COLORS.sageGreen} />
-          </TouchableOpacity>
         </View>
+
+        <Image
+          source={require("../../assets/images/bgphoto.webp")}
+          style={styles.professionalHero}
+        />
 
         <TouchableOpacity
           style={styles.checkInCard}
@@ -528,6 +551,12 @@ export default function ProfessionalScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.bgGreen },
   screen: { flex: 1, paddingHorizontal: 20, paddingTop: 24 },
+  professionalHero: {
+    width: "100%",
+    height: 160,
+    borderRadius: 24,
+    marginBottom: 18,
+  },
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -545,18 +574,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     maxWidth: "82%",
-  },
-  refreshBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 16,
-    backgroundColor: COLORS.white,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
   },
   checkInCard: {
     backgroundColor: COLORS.sageGreen,
@@ -596,7 +613,7 @@ const styles = StyleSheet.create({
   joinLabel: {
     fontSize: 16,
     fontWeight: "700",
-    color: COLORS.textDark,
+    color: COLORS.mainTextColor,
     marginBottom: 6,
   },
   joinCopy: {

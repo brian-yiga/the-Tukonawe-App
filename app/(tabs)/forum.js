@@ -13,6 +13,7 @@ import {
     ActivityIndicator,
     Alert,
     FlatList,
+    Image,
     KeyboardAvoidingView,
     Platform,
     SafeAreaView,
@@ -29,7 +30,7 @@ import { useAuth } from "../../context/AuthContext";
 const CATEGORIES = ["General", "Anxiety", "Depression", "Wins"];
 
 export default function ForumScreen() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("General");
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -54,28 +55,6 @@ export default function ForumScreen() {
 
     return () => unsubscribe();
   }, [activeTab]);
-
-  const handleLogout = () => {
-    Alert.alert(
-      "Log Out",
-      "Do you want to log out and return to the welcome screen?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Log Out",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await logout();
-              router.replace("/");
-            } catch (error) {
-              Alert.alert("Error", "Unable to log out right now.");
-            }
-          },
-        },
-      ],
-    );
-  };
 
   const handleCreatePost = async () => {
     if (!newPost.trim()) return;
@@ -140,14 +119,12 @@ export default function ForumScreen() {
               A supportive space for honest check-ins and gentle encouragement.
             </Text>
           </View>
-          <TouchableOpacity style={styles.logoutIcon} onPress={handleLogout}>
-            <Ionicons
-              name="log-out-outline"
-              size={22}
-              color={COLORS.textDark}
-            />
-          </TouchableOpacity>
         </View>
+
+        <Image
+          source={require("../../assets/images/bgphoto.webp")}
+          style={styles.forumHeroImage}
+        />
 
         <View style={styles.rulesCard}>
           <Text style={styles.rulesTitle}>Community Guidelines</Text>
@@ -227,7 +204,7 @@ export default function ForumScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
+  safeArea: { flex: 1, backgroundColor: COLORS.bgGreen },
   container: { flex: 1, paddingHorizontal: 16, paddingBottom: 120 },
   headerRow: {
     flexDirection: "row",
@@ -238,7 +215,7 @@ const styles = StyleSheet.create({
   },
   headerBar: {
     flex: 1,
-    backgroundColor: "#075E54",
+    backgroundColor: COLORS.sageGreen,
     borderRadius: 24,
     paddingVertical: 20,
     paddingHorizontal: 18,
@@ -255,12 +232,12 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   rulesCard: {
-    backgroundColor: "#F3FFF7",
+    backgroundColor: "#FFF7F1",
     borderRadius: 18,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#C8F0DF",
+    borderColor: "#F0D5C4",
   },
   rulesTitle: {
     fontSize: 16,
@@ -286,12 +263,12 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#E8F1EE",
+    borderColor: "#EAD9C8",
     alignItems: "center",
   },
   activeTab: {
-    backgroundColor: "#25D366",
-    borderColor: "#25D366",
+    backgroundColor: COLORS.sageGreen,
+    borderColor: COLORS.sageGreen,
   },
   tabText: { fontSize: 13, color: COLORS.textMuted, fontWeight: "600" },
   activeTabText: { color: "white" },
@@ -305,12 +282,12 @@ const styles = StyleSheet.create({
   },
   listContent: { paddingBottom: 180 },
   postCard: {
-    backgroundColor: "#F8FFF8",
+    backgroundColor: "#FFF7F2",
     borderRadius: 18,
     padding: 16,
     marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: "#25D366",
+    borderLeftColor: "#B37A49",
     shadowColor: "#000",
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 2 },
@@ -358,6 +335,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginLeft: 10,
+  },
+  forumHeroImage: {
+    width: "100%",
+    height: 150,
+    borderRadius: 20,
+    marginBottom: 18,
   },
   emptyText: { textAlign: "center", color: COLORS.textMuted, marginTop: 50 },
 });

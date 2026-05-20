@@ -1,44 +1,17 @@
 import { useRouter } from "expo-router";
-import { signOut } from "firebase/auth";
-import { useState } from "react";
 import {
-    Alert,
     SafeAreaView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from "react-native";
-import CustomButton from "../../components/CustomButton";
-import { auth } from "../../config/firebaseConfig";
 import { COLORS } from "../../constants/theme";
 import { useAuth } from "../../context/AuthContext";
 
 export default function ProfileScreen() {
   const { user } = useAuth();
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-
-  const handleLogout = async () => {
-    Alert.alert("Log Out", "Are you sure you want to log out?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Log Out",
-        onPress: async () => {
-          setLoading(true);
-          try {
-            await signOut(auth);
-            router.replace("/");
-          } catch (error) {
-            Alert.alert("Error", "Failed to log out.");
-          } finally {
-            setLoading(false);
-          }
-        },
-        style: "destructive",
-      },
-    ]);
-  };
 
   return (
     <SafeAreaView
@@ -77,13 +50,6 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.spacer} />
-
-        <CustomButton
-          title={loading ? "Logging Out..." : "Log Out"}
-          onPress={handleLogout}
-          disabled={loading}
-          type="sos"
-        />
       </View>
     </SafeAreaView>
   );

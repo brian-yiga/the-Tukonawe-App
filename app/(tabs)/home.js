@@ -18,24 +18,25 @@ import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
-    Dimensions,
     Image,
+    ImageBackground,
     Linking,
+    Platform,
     SafeAreaView,
     ScrollView,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
+    useWindowDimensions,
     View,
 } from "react-native";
 import { LineChart } from "react-native-chart-kit";
-import YoutubePlayer from "react-native-youtube-iframe"; // Ensure this is installed: npx expo install react-native-youtube-iframe
+import YoutubePlayer from "react-native-youtube-iframe"; // For web compatibility, also run: npx expo install react-native-web-webview react-native-webview
 import { db } from "../../config/firebaseConfig";
 import { COLORS } from "../../constants/theme";
 import { useAuth } from "../../context/AuthContext";
 
-const screenWidth = Dimensions.get("window").width;
 const COMMON_WHATSAPP_NUMBER = "+2560709203470";
 
 async function openWhatsApp(phone, message) {
@@ -44,6 +45,9 @@ async function openWhatsApp(phone, message) {
   const webUrl = `https://wa.me/${phone.replace(/\D/g, "")}?text=${encoded}`;
 
   try {
+    if (Platform.OS === "web") {
+      return Linking.openURL(webUrl);
+    }
     const supported = await Linking.canOpenURL(appUrl);
     return supported ? Linking.openURL(appUrl) : Linking.openURL(webUrl);
   } catch (error) {
@@ -56,6 +60,7 @@ async function openWhatsApp(phone, message) {
 
 export default function HomeScreen() {
   const { user, logout } = useAuth();
+  const { width: screenWidth } = useWindowDimensions();
   const router = useRouter();
   const firstName = user?.email?.split("@")[0] || "Friend";
   const [quote, setQuote] = useState({
@@ -96,6 +101,17 @@ export default function HomeScreen() {
   };
 
   const handleLogout = () => {
+    if (Platform.OS === "web") {
+      const confirmed = window.confirm(
+        "Do you want to log out and return to the welcome screen?",
+      );
+      if (confirmed) {
+        logout()
+          .then(() => router.replace("/"))
+          .catch(() => alert("Unable to log out."));
+      }
+      return;
+    }
     Alert.alert(
       "Log Out",
       "Do you want to log out and return to the welcome screen?",
@@ -201,6 +217,15 @@ export default function HomeScreen() {
   };
 
   const handlePickImage = async () => {
+    if (Platform.OS === "web") {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
+      if (!result.canceled) setJournalImage(result.assets[0].uri);
+      return;
+    }
     Alert.alert("Attach Photo", "Choose an option", [
       {
         text: "Camera",
@@ -242,6 +267,12 @@ export default function HomeScreen() {
   const handleGetLocation = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") {
+      if (Platform.OS === "web") {
+        alert(
+          "Location permission is required. Please check browser settings.",
+        );
+        return;
+      }
       Alert.alert(
         "Permission denied",
         "Location permission is required to attach location. Would you like to open settings?",
@@ -312,14 +343,6 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
           </View>
-
-          <TouchableOpacity style={styles.logoutIcon} onPress={handleLogout}>
-            <Ionicons
-              name="log-out-outline"
-              size={24}
-              color={COLORS.textDark}
-            />
-          </TouchableOpacity>
         </View>
 
         <TouchableOpacity
@@ -330,6 +353,20 @@ export default function HomeScreen() {
             Find A Professional
           </Text>
         </TouchableOpacity>
+
+        <ImageBackground
+          source={require("../../assets/images/homePageHeroBg.jpg")}
+          style={styles.heroCard}
+          imageStyle={styles.heroImage}
+        >
+          <View style={styles.heroOverlay} />
+          <View style={styles.heroText}>
+            <Text style={styles.heroTitle}>A gentle path to balance</Text>
+            <Text style={styles.heroSubtitle}>
+              Explore daily support techniques with soothing imagery.
+            </Text>
+          </View>
+        </ImageBackground>
 
         {musicPlaying && (
           <View style={styles.musicPanel}>
@@ -352,7 +389,7 @@ export default function HomeScreen() {
                 style={styles.moodItem}
                 onPress={() =>
                   router.push({
-                    pathname: "/(tabs)/mood-tracker",
+                    pathname: "/mood-tracker",
                     params: { initialMood: mood },
                   })
                 }
@@ -448,7 +485,7 @@ export default function HomeScreen() {
 
         {/* Daily Inspiration (YouTube) */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Morning Meditation</Text>
+          <Text style={styles.sectionTitle}>Daily Meditation</Text>
           <View style={styles.videoContainer}>
             <YoutubePlayer
               height={200}
@@ -476,7 +513,7 @@ export default function HomeScreen() {
           <Text style={styles.sectionTitle}>Your Journal</Text>
           <TextInput
             style={styles.journalInput}
-            placeholder="How was your night? What's on your mind?"
+            placeholder="What's on your mind?"
             multiline
             value={journalEntry}
             onChangeText={setJournalEntry}
@@ -517,6 +554,21 @@ export default function HomeScreen() {
             style={styles.lastEntryBox}
             onPress={() => {
               if (lastEntry) {
+                if (Platform.OS === "web") {
+                  const wantToDelete = window.confirm(
+                    "Delete last entry? (OK to Delete, Cancel to Edit)",
+                  );
+                  if (wantToDelete) {
+                    deleteDoc(doc(db, "journalEntries", lastEntry.id)).catch(
+                      () => alert("Error deleting."),
+                    );
+                  } else {
+                    setJournalEntry(lastEntry.content || "");
+                    setJournalImage(lastEntry.image || null);
+                    setJournalLocation(lastEntry.location || null);
+                  }
+                  return;
+                }
                 Alert.alert("Last Entry", "What would you like to do?", [
                   {
                     text: "Edit",
@@ -594,26 +646,26 @@ const styles = StyleSheet.create({
   feelingTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: COLORS.textDark,
+    color: COLORS.mainTextColor,
     marginBottom: 16,
   },
   sectionCard: {
-    backgroundColor: COLORS.warmNeutral,
+    backgroundColor: COLORS.white,
     borderRadius: 20,
     padding: 20,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: "#cddce6",
+    borderColor: "#E7D2C2",
     elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.05,
     shadowRadius: 10,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: COLORS.textDark,
+    color: COLORS.mainTextColor,
     marginBottom: 16,
   },
   moodRow: {
@@ -661,7 +713,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   musicPanel: {
-    backgroundColor: "#eaf4f8",
+    backgroundColor: "#FFF4EE",
     borderRadius: 18,
     padding: 14,
     marginBottom: 20,
@@ -684,6 +736,36 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 14,
     fontWeight: "700",
+    marginBottom: 4,
+  },
+  heroCard: {
+    width: "100%",
+    height: 168,
+    borderRadius: 24,
+    overflow: "hidden",
+    marginTop: 18,
+    marginBottom: 22,
+  },
+  heroImage: { opacity: 0.95 },
+  heroOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255, 255, 255, 0.32)",
+  },
+  heroText: {
+    flex: 1,
+    padding: 20,
+    justifyContent: "flex-end",
+  },
+  heroTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: COLORS.mainTextColor,
+    marginBottom: 8,
+  },
+  heroSubtitle: {
+    fontSize: 14,
+    color: COLORS.textMuted,
+    maxWidth: "85%",
   },
   widgetTitle: {
     fontSize: 14,

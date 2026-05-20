@@ -4,7 +4,7 @@
     "slug": "TukonaweApp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo.png",
+    "icon": "./assets/images/icon-square.png",
     "scheme": "tukonaweapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -14,16 +14,27 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/logo.png",
-        "backgroundImage": "./assets/images/logo.png",
-        "monochromeImage": "./assets/images/logo.png"
+        "foregroundImage": "./assets/images/icon-square.png",
+        "backgroundImage": "./assets/images/icon-square.png",
+        "monochromeImage": "./assets/images/icon-square.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/logo-nobg.png"
+      "favicon": "./assets/images/logo-nobg.png",
+      "manifest": {
+        "name": "TukonaweApp",
+        "short_name": "Tukonawe",
+        "description": "Your mental health companion.",
+        "background_color": "#E6F4FE",
+        "theme_color": "#588C79",
+        "display": "standalone",
+        "orientation": "portrait",
+        "start_url": ".",
+        "scope": "/"
+      }
     },
     "plugins": [
       "expo-router",
@@ -38,7 +49,8 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

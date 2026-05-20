@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useContext, useState } from "react";
 import {
   Alert,
+  Image,
   Linking,
   Modal,
   SafeAreaView,
@@ -11,6 +12,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ImageBackground,
 } from "react-native";
 import { COLORS } from "../../constants/theme";
 import { SavedResourcesContext } from "../../context/SavedResourcesContext";
@@ -336,11 +338,11 @@ export default function ToolsScreen() {
 
   const handleToolPress = (toolId) => {
     if (toolId === "1") {
-      router.push("/(tabs)/mood-tracker");
+      router.push("/mood-tracker");
     } else if (toolId === "2") {
-      router.push("/(tabs)/journal");
+      router.push("/journal");
     } else if (toolId === "3") {
-      router.push("/(tabs)/cbt-record");
+      router.push("/cbt-record");
     }
   };
 
@@ -373,7 +375,7 @@ export default function ToolsScreen() {
     }
 
     router.push({
-      pathname: "/(tabs)/resource-detail",
+      pathname: "/resource-detail",
       params: { resourceId: resource.id, category: activeTab },
     });
   };
@@ -428,6 +430,22 @@ export default function ToolsScreen() {
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         <Text style={styles.header}>Calm Corner</Text>
         <Text style={styles.subtitle}>Daily grounding and growth.</Text>
+
+        <View style={styles.heroSection}>
+          <ImageBackground
+            source={require("../../assets/images/toolsBg.jpg")}
+            style={styles.toolHeroImage} // Make sure this has your width/height
+          >
+            <View style={styles.heroInfo}>
+              <Text style={styles.heroInfoTitle}>
+                Mindful moments made easy
+              </Text>
+              <Text style={styles.heroInfoSubtitle}>
+                Start your day with small practices that support your mood.
+              </Text>
+            </View>
+          </ImageBackground>
+        </View>
 
         <Text style={styles.categoryTitle}>Daily Tools</Text>
         <View style={styles.toolsGrid}>
@@ -608,6 +626,31 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     marginBottom: 24,
     marginTop: 4,
+  },
+  heroSection: {
+    borderRadius:16,
+    overflow: "hidden",
+    marginBottom: 20,
+    backgroundColor: COLORS.cardBg,
+  },
+  toolHeroImage: {
+    width: "100%",
+    height: 160,
+  },
+  heroInfo: {
+    padding: 16,
+  },
+  heroInfoTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: COLORS.mainTextColor,
+    marginBottom: 8,
+    marginTop: 12,
+  },
+  heroInfoSubtitle: {
+    fontSize: 13,
+    color: COLORS.textMuted,
+    lineHeight: 20,
   },
   categoryTitle: {
     fontSize: 18,

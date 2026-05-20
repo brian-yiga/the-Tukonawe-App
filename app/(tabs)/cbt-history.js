@@ -1,25 +1,28 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import {
-  collection,
-  onSnapshot,
-  orderBy,
-  query,
-  where,
+    collection,
+    onSnapshot,
+    orderBy,
+    query,
+    where,
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    FlatList,
+    Image,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { db } from "../../config/firebaseConfig";
 import { COLORS } from "../../constants/theme";
 import { useAuth } from "../../context/AuthContext";
+
+const historyHero = require("../../assets/images/bgphoto.webp");
 
 export default function CBTHistoryScreen() {
   const router = useRouter();
@@ -33,21 +36,25 @@ export default function CBTHistoryScreen() {
     const q = query(
       collection(db, "cbt_records"),
       where("userId", "==", user.uid),
-      orderBy("createdAt", "desc")
+      orderBy("createdAt", "desc"),
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setRecords(data);
-      setLoading(false);
-    }, (error) => {
-      console.error("Firestore Error:", error);
-      setLoading(false);
-      // You could optionally show an alert or set an error state here
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const data = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setRecords(data);
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Firestore Error:", error);
+        setLoading(false);
+        // You could optionally show an alert or set an error state here
+      },
+    );
 
     return () => unsubscribe();
   }, [user]);
@@ -57,24 +64,34 @@ export default function CBTHistoryScreen() {
       <View style={styles.cardHeader}>
         <Text style={styles.dateText}>
           {item.createdAt?.toDate().toLocaleDateString("en-US", {
-            month: "short", day: "numeric", year: "numeric"
+            month: "short",
+            day: "numeric",
+            year: "numeric",
           })}
         </Text>
-        <Ionicons name="checkmark-done-circle" size={20} color={COLORS.sageGreen} />
+        <Ionicons
+          name="checkmark-done-circle"
+          size={20}
+          color={COLORS.sageGreen}
+        />
       </View>
-      
+
       <Text style={styles.sectionLabel}>Situation</Text>
-      <Text style={styles.contentText} numberOfLines={2}>{item.situation}</Text>
-      
+      <Text style={styles.contentText} numberOfLines={2}>
+        {item.situation}
+      </Text>
+
       <View style={styles.divider} />
-      
+
       <Text style={styles.sectionLabel}>Balanced Perspective</Text>
       <Text style={styles.balancedText}>{item.balancedThought}</Text>
     </View>
   );
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: COLORS.bgGreen }]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: COLORS.bgGreen }]}
+    >
       <View style={styles.container}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={COLORS.sageGreen} />
@@ -82,10 +99,26 @@ export default function CBTHistoryScreen() {
         </TouchableOpacity>
 
         <Text style={styles.title}>History</Text>
-        <Text style={styles.subtitle}>Review your progress in challenging thoughts.</Text>
+
+        <View style={styles.heroBanner}>
+          <Image source={historyHero} style={styles.heroImage} />
+          <View style={styles.heroOverlay}>
+            <Text style={styles.heroTitle}>
+              Track your growth with calm clarity
+            </Text>
+          </View>
+        </View>
+
+        <Text style={styles.subtitle}>
+          Review your progress in challenging thoughts.
+        </Text>
 
         {loading ? (
-          <ActivityIndicator color={COLORS.sageGreen} size="large" style={{ marginTop: 50 }} />
+          <ActivityIndicator
+            color={COLORS.sageGreen}
+            size="large"
+            style={{ marginTop: 50 }}
+          />
         ) : records.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="book-outline" size={60} color="#DDD" />
@@ -110,7 +143,35 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 20 },
   backBtn: { flexDirection: "row", alignItems: "center", marginBottom: 15 },
   backText: { marginLeft: 8, color: COLORS.sageGreen, fontWeight: "600" },
-  title: { fontSize: 28, fontWeight: "600", color: COLORS.brownish, marginBottom: 8 },
+  title: {
+    fontSize: 28,
+    fontWeight: "600",
+    color: COLORS.brownish,
+    marginBottom: 8,
+  },
+  heroBanner: {
+    borderRadius: 24,
+    overflow: "hidden",
+    minHeight: 140,
+    marginBottom: 20,
+  },
+  heroImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+    opacity: 0.95,
+  },
+  heroOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.22)",
+    justifyContent: "flex-end",
+    padding: 16,
+  },
+  heroTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "white",
+  },
   subtitle: { fontSize: 14, color: COLORS.textMuted, marginBottom: 20 },
   historyCard: {
     backgroundColor: "white",
@@ -129,9 +190,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  dateText: { fontSize: 12, fontWeight: "700", color: COLORS.textMuted, textTransform: "uppercase" },
-  sectionLabel: { fontSize: 12, fontWeight: "700", color: COLORS.sageGreen, marginBottom: 4 },
-  contentText: { fontSize: 14, color: COLORS.textDark, marginBottom: 10, lineHeight: 20 },
+  dateText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: COLORS.textMuted,
+    textTransform: "uppercase",
+  },
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: COLORS.sageGreen,
+    marginBottom: 4,
+  },
+  contentText: {
+    fontSize: 14,
+    color: COLORS.textDark,
+    marginBottom: 10,
+    lineHeight: 20,
+  },
   divider: { height: 1, backgroundColor: "#F0F0F0", marginVertical: 10 },
   balancedText: {
     fontSize: 15,

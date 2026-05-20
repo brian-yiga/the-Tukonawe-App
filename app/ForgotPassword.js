@@ -38,6 +38,11 @@ export default function ForgotPassword() {
     try {
       await sendPasswordResetEmail(auth, email);
       setSuccess(true);
+      if (Platform.OS === 'web') {
+        alert("Check Your Email: We've sent a password reset link to your email. Please check your inbox.");
+        router.push("/Login");
+        return;
+      }
       Alert.alert(
         "Check Your Email",
         "We've sent a password reset link to your email. Please check your inbox.",

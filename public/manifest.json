@@ -1,0 +1,18 @@
+{
+  "name": "TukonaweApp",
+  "short_name": "Tukonawe",
+  "description": "Your mental health companion.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#E6F4FE",
+  "theme_color": "#588C79",
+  "icons": [
+    {
+      "src": "/icon-square.png",
+      "sizes": "1024x1024",
+      "type": "image/png"
+    }
+  ]
+}

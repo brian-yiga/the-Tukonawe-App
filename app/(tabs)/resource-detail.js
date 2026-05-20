@@ -3,16 +3,19 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useContext, useEffect, useState } from "react";
 import {
     Alert,
+    Image,
     Linking,
     SafeAreaView,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View
+    View,
 } from "react-native";
 import { COLORS } from "../../constants/theme";
 import { SavedResourcesContext } from "../../context/SavedResourcesContext";
+
+const detailHero = require("../../assets/images/bgphoto.webp");
 
 const MOCK_RESOURCES = {
   meditation: [
@@ -173,6 +176,16 @@ export default function ResourceDetailScreen() {
           </TouchableOpacity>
         </View>
 
+        <View style={styles.heroBanner}>
+          <Image source={detailHero} style={styles.heroImage} />
+          <View style={styles.heroOverlay}>
+            <Text style={styles.heroLabel}>Warm Resource Tip</Text>
+            <Text style={styles.heroText}>
+              Support your wellbeing with this hand-picked resource.
+            </Text>
+          </View>
+        </View>
+
         <View style={styles.card}>
           <View style={styles.badgeRow}>
             <View style={styles.badge}>
@@ -280,6 +293,37 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     lineHeight: 24,
     marginBottom: 24,
+  },
+  heroBanner: {
+    borderRadius: 24,
+    overflow: "hidden",
+    marginBottom: 20,
+    minHeight: 150,
+  },
+  heroImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+    opacity: 0.95,
+  },
+  heroOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.24)",
+    justifyContent: "flex-end",
+    padding: 18,
+  },
+  heroLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "rgba(255,255,255,0.9)",
+    textTransform: "uppercase",
+    marginBottom: 4,
+  },
+  heroText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "white",
+    lineHeight: 22,
   },
   playButton: {
     alignItems: "center",

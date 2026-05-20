@@ -37,17 +37,15 @@ export default function Goals() {
 
   const handleNext = () => {
     // TODO: Save selected goals to user profile or context
-    router.push("/(tabs)/home");
+    router.push("/home");
   };
 
   const handleSkip = () => {
-    router.push("/(tabs)/home");
+    router.push("/home");
   };
 
   return (
-    <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: "#44718d" }]}
-    >
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: "#44718d" }]}>
       <View style={styles.headerContainer}>
         <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
           <Text style={styles.skipText}>SKIP</Text>

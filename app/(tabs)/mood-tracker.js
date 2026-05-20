@@ -1,30 +1,42 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
-import { collection, addDoc, serverTimestamp, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  addDoc,
+  collection,
+  limit,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  where,
+} from "firebase/firestore";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
 } from "react-native";
 import { LineChart } from "react-native-chart-kit";
 import YoutubePlayer from "react-native-youtube-iframe";
 import { db } from "../../config/firebaseConfig";
 import { COLORS } from "../../constants/theme";
 import { useAuth } from "../../context/AuthContext";
-import { moodToValue } from "./moodUtils";
+import { moodToValue } from "../../utils/moodUtils";
 
-const screenWidth = Dimensions.get("window").width;
+const moodHero = require("../../assets/images/moodTrackerBg.jpg");
 
 export default function MoodTrackerScreen() {
   const router = useRouter();
+  const { width: screenWidth } = useWindowDimensions();
   const params = useLocalSearchParams();
   const [selectedMood, setSelectedMood] = useState(
     params.initialMood || "calm",
@@ -55,29 +67,34 @@ export default function MoodTrackerScreen() {
     if (!user?.uid) return;
 
     // Determine how many logs to show based on the active range
-    const rangeLimit = activeRange === "Daily" ? 12 : activeRange === "Weekly" ? 7 : 30;
+    const rangeLimit =
+      activeRange === "Daily" ? 12 : activeRange === "Weekly" ? 7 : 30;
 
     const q = query(
       collection(db, "mood_logs"),
       where("userId", "==", user.uid),
       orderBy("createdAt", "desc"),
-      limit(rangeLimit)
+      limit(rangeLimit),
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const rawData = snapshot.docs.map((doc) => doc.data());
-      
+
       if (rawData.length > 0) {
         // Reverse to show chronological order (left to right)
         const values = rawData.map((d) => d.moodValue || 3).reverse();
-        const labels = rawData.map((d, index) => {
-          if (activeRange === "Weekly") {
-            // Try to get day of week if timestamp exists
-            const date = d.createdAt?.toDate();
-            return date ? date.toLocaleDateString('en-US', { weekday: 'short' }) : (index + 1).toString();
-          }
-          return (index + 1).toString();
-        }).reverse();
+        const labels = rawData
+          .map((d, index) => {
+            if (activeRange === "Weekly") {
+              // Try to get day of week if timestamp exists
+              const date = d.createdAt?.toDate();
+              return date
+                ? date.toLocaleDateString("en-US", { weekday: "short" })
+                : (index + 1).toString();
+            }
+            return (index + 1).toString();
+          })
+          .reverse();
 
         setChartData({ labels, datasets: [{ data: values }] });
       }
@@ -102,28 +119,45 @@ export default function MoodTrackerScreen() {
 
   const handleSaveMood = async () => {
     if (!selectedMood) {
+      if (Platform.OS === "web") {
+        alert("Please select a mood before logging.");
+        return;
+      }
       Alert.alert("Error", "Please select a mood before logging.");
       return;
     }
     if (!user?.uid) {
+      if (Platform.OS === "web") {
+        alert("You must be logged in to save your mood.");
+        return;
+      }
       Alert.alert("Error", "You must be logged in to save your mood.");
       return;
     }
 
     setSaving(true);
     try {
-      await addDoc(collection(db, "mood_logs"), { // This creates the collection automatically on first save
+      await addDoc(collection(db, "mood_logs"), {
+        // This creates the collection automatically on first save
         userId: user.uid,
         mood: selectedMood,
         moodValue: moodToValue(selectedMood), // Convert mood to a numerical value
         reason: reason,
         createdAt: serverTimestamp(),
       });
-      Alert.alert("Success", "Mood logged successfully!");
+      if (Platform.OS === "web") {
+        alert("Mood logged successfully!");
+      } else {
+        Alert.alert("Success", "Mood logged successfully!");
+      }
       setReason(""); // Clear reason input
       router.back(); // Go back to home screen
     } catch (error) {
-      Alert.alert("Error", "Failed to save mood. Please try again.");
+      if (Platform.OS === "web") {
+        alert("Failed to save mood. Please try again.");
+      } else {
+        Alert.alert("Error", "Failed to save mood. Please try again.");
+      }
       console.error("Error saving mood:", error);
     } finally {
       setSaving(false);
@@ -151,12 +185,27 @@ export default function MoodTrackerScreen() {
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
       >
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity
+          onPress={() => router.push("/tools")}
+          style={styles.backBtn}
+        >
           <Ionicons name="arrow-back" size={24} color={COLORS.sageGreen} />
-          <Text style={styles.backText}>Back to Home</Text>
+          <Text style={styles.backText}>Back to Tools</Text>
         </TouchableOpacity>
 
         <Text style={styles.title}>Mood Tracker</Text>
+
+        <View style={styles.heroBanner}>
+          <Image source={moodHero} style={styles.heroImage} />
+          <View style={styles.heroOverlay}>
+            <Text style={styles.heroTitle}>
+              Track feelings with a gentle rhythm
+            </Text>
+            <Text style={styles.heroSubtitle}>
+              Notice the patterns and keep your mood journey warm and kind.
+            </Text>
+          </View>
+        </View>
 
         {/* Log Mood Section */}
         <View style={styles.card}>
@@ -183,7 +232,11 @@ export default function MoodTrackerScreen() {
             onPress={handleSaveMood}
             disabled={saving}
           >
-            {saving ? <ActivityIndicator color="white" /> : <Text style={styles.saveBtnText}>Log Entry</Text>}
+            {saving ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.saveBtnText}>Log Entry</Text>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -239,8 +292,8 @@ export default function MoodTrackerScreen() {
               if (index === 0) return COLORS.sageGreen;
               const prevValue = data[index - 1];
               if (dataPoint > prevValue) return COLORS.mutedBlue; // Upward trend
-              if (dataPoint < prevValue) return COLORS.sos;       // Downward trend
-              return COLORS.sageGreen;                           // No change
+              if (dataPoint < prevValue) return COLORS.sos; // Downward trend
+              return COLORS.sageGreen; // No change
             }}
             style={styles.chart}
           />
@@ -287,6 +340,35 @@ const styles = StyleSheet.create({
     color: COLORS.brownish,
     marginBottom: 20,
   },
+  heroBanner: {
+    borderRadius: 24,
+    overflow: "hidden",
+    marginBottom: 20,
+    minHeight: 140,
+  },
+  heroImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+    opacity: 0.95,
+  },
+  heroOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.20)",
+    justifyContent: "flex-end",
+    padding: 18,
+  },
+  heroTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: COLORS.mainTextColor,
+    marginBottom: 4,
+  },
+  heroSubtitle: {
+    fontSize: 13,
+    color: COLORS.mainTextColor,
+    lineHeight: 18,
+  },
   card: {
     backgroundColor: "white",
     borderRadius: 24,
@@ -297,7 +379,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: COLORS.textDark,
+    color: COLORS.mainTextColor,
     marginBottom: 15,
   },
   moodContainer: {
@@ -320,7 +402,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    color: COLORS.textDark,
+    color: COLORS.mainTextColor,
     marginBottom: 8,
     fontWeight: "500",
   },
@@ -368,7 +450,7 @@ const styles = StyleSheet.create({
   },
   scriptureText: {
     fontStyle: "italic",
-    color: COLORS.textDark,
+    color: COLORS.mainTextColor,
     textAlign: "center",
   },
   scriptureRef: {
@@ -378,7 +460,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   divider: { height: 1, backgroundColor: "#EEE", marginVertical: 15 },
-  quoteText: { color: COLORS.textDark, textAlign: "center" },
+  quoteText: { color: COLORS.mainTextColor, textAlign: "center" },
   quoteAuthor: {
     textAlign: "center",
     fontSize: 12,

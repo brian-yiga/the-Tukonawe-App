@@ -3,27 +3,49 @@ import { useRouter } from "expo-router";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { db } from "../../config/firebaseConfig";
 import { COLORS } from "../../constants/theme";
 import { useAuth } from "../../context/AuthContext";
 
+const recordHero = require("../../assets/images/thoughtProcessBg.jpg");
+
 const DISTORTIONS = [
-  { name: "All-or-Nothing Thinking", desc: "Seeing things in black-or-white. If it's not perfect, it's a failure." },
-  { name: "Catastrophizing", desc: "Expecting the worst-case scenario to happen, no matter how unlikely." },
-  { name: "Mind Reading", desc: "Assuming you know what others are thinking without any evidence." },
-  { name: "Overgeneralization", desc: "Seeing a single negative event as a never-ending pattern of defeat." },
-  { name: "Labeling", desc: "Assigning rigid, negative labels to yourself (e.g., 'I'm a failure')." },
-  { name: "Emotional Reasoning", desc: "Assuming that your negative emotions reflect the way things really are." },
+  {
+    name: "All-or-Nothing Thinking",
+    desc: "Seeing things in black-or-white. If it's not perfect, it's a failure.",
+  },
+  {
+    name: "Catastrophizing",
+    desc: "Expecting the worst-case scenario to happen, no matter how unlikely.",
+  },
+  {
+    name: "Mind Reading",
+    desc: "Assuming you know what others are thinking without any evidence.",
+  },
+  {
+    name: "Overgeneralization",
+    desc: "Seeing a single negative event as a never-ending pattern of defeat.",
+  },
+  {
+    name: "Labeling",
+    desc: "Assigning rigid, negative labels to yourself (e.g., 'I'm a failure').",
+  },
+  {
+    name: "Emotional Reasoning",
+    desc: "Assuming that your negative emotions reflect the way things really are.",
+  },
 ];
 
 export default function CBTRecordScreen() {
@@ -43,6 +65,10 @@ export default function CBTRecordScreen() {
 
   const handleSave = async () => {
     if (!form.situation || !form.automaticThought) {
+      if (Platform.OS === "web") {
+        alert("Please describe the situation and your automatic thought.");
+        return;
+      }
       Alert.alert(
         "Required Fields",
         "Please describe the situation and your automatic thought.",
@@ -57,10 +83,21 @@ export default function CBTRecordScreen() {
         ...form,
         createdAt: serverTimestamp(),
       });
-      Alert.alert("Record Saved", "Your balanced perspective has been saved.");
+      if (Platform.OS === "web") {
+        alert("Your balanced perspective has been saved.");
+      } else {
+        Alert.alert(
+          "Record Saved",
+          "Your balanced perspective has been saved.",
+        );
+      }
       router.back();
     } catch (e) {
-      Alert.alert("Error", "Could not save the record. Please try again.");
+      if (Platform.OS === "web") {
+        alert("Could not save the record. Please try again.");
+      } else {
+        Alert.alert("Error", "Could not save the record. Please try again.");
+      }
     } finally {
       setSaving(false);
     }
@@ -90,13 +127,16 @@ export default function CBTRecordScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity
+            onPress={() => router.push("/tools")}
+            style={styles.backBtn}
+          >
             <Ionicons name="arrow-back" size={24} color={COLORS.sageGreen} />
-            <Text style={styles.backText}>Back</Text>
+            <Text style={styles.backText}>Back to Tools</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            onPress={() => router.push("/(tabs)/cbt-history")} 
+
+          <TouchableOpacity
+            onPress={() => router.push("/cbt-history")}
             style={styles.historyBtn}
           >
             <Ionicons name="time-outline" size={20} color={COLORS.sageGreen} />
@@ -105,6 +145,16 @@ export default function CBTRecordScreen() {
         </View>
 
         <Text style={styles.title}>CBT Thought Record</Text>
+
+        <View style={styles.heroBanner}>
+          <Image source={recordHero} style={styles.heroImage} />
+          <View style={styles.heroOverlay}>
+            <Text style={styles.heroTitle}>
+              Shape your thoughts with a calmer space
+            </Text>
+          </View>
+        </View>
+
         <Text style={styles.subtitle}>
           Challenge negative thoughts by examining the evidence and finding
           balance.
@@ -125,17 +175,19 @@ export default function CBTRecordScreen() {
             "Example: They think my work is terrible and I'm going to be fired.",
           )}
 
-          <TouchableOpacity 
-            style={styles.guideToggle} 
+          <TouchableOpacity
+            style={styles.guideToggle}
             onPress={() => setShowDistortions(!showDistortions)}
           >
-            <Ionicons 
-              name={showDistortions ? "chevron-up" : "help-circle-outline"} 
-              size={20} 
-              color={COLORS.sageGreen} 
+            <Ionicons
+              name={showDistortions ? "chevron-up" : "help-circle-outline"}
+              size={20}
+              color={COLORS.sageGreen}
             />
             <Text style={styles.guideToggleText}>
-              {showDistortions ? "Hide Distortion Guide" : "View Common Distortions"}
+              {showDistortions
+                ? "Hide Distortion Guide"
+                : "View Common Distortions"}
             </Text>
           </TouchableOpacity>
 
@@ -201,16 +253,57 @@ export default function CBTRecordScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { padding: 20 },
-  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 15 },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
+  },
   backBtn: { flexDirection: "row", alignItems: "center" },
   backText: { marginLeft: 8, color: COLORS.sageGreen, fontWeight: "600" },
-  historyBtn: { flexDirection: "row", alignItems: "center", backgroundColor: "white", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-  historyBtnText: { marginLeft: 6, color: COLORS.sageGreen, fontSize: 13, fontWeight: "600" },
+  historyBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "white",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginRight: 45,
+  },
+  historyBtnText: {
+    marginLeft: 6,
+    color: COLORS.sageGreen,
+    fontSize: 13,
+    fontWeight: "600",
+  },
   title: {
     fontSize: 28,
     fontWeight: "600",
     color: COLORS.brownish,
     marginBottom: 8,
+  },
+  heroBanner: {
+    borderRadius: 24,
+    overflow: "hidden",
+    minHeight: 140,
+    marginBottom: 20,
+  },
+  heroImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+    opacity: 0.95,
+  },
+  heroOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.24)",
+    justifyContent: "flex-end",
+    padding: 16,
+  },
+  heroTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: COLORS.mainTextColor,
   },
   subtitle: {
     fontSize: 14,
@@ -234,7 +327,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: "700",
-    color: COLORS.textDark,
+    color: COLORS.mainTextColor,
     marginBottom: 4,
   },
   description: {

@@ -3,34 +3,38 @@ import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import {
-    addDoc,
-    collection,
-    deleteDoc,
-    doc,
-    limit,
-    onSnapshot,
-    orderBy,
-    query,
-    serverTimestamp,
-    where,
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  limit,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  where,
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    Linking,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  ImageBackground,
+  Linking,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { db } from "../../config/firebaseConfig";
 import { COLORS } from "../../constants/theme";
 import { useAuth } from "../../context/AuthContext";
+
+const journalHero = require("../../assets/images/journalBg.jpg");
 
 export default function JournalScreen() {
   const router = useRouter();
@@ -85,6 +89,17 @@ export default function JournalScreen() {
   };
 
   const handlePickImage = async () => {
+    if (Platform.OS === "web") {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
+      if (!result.canceled) {
+        setImage(result.assets[0].uri);
+      }
+      return;
+    }
     Alert.alert("Attach Photo", "Choose an option", [
       {
         text: "Camera",
@@ -130,6 +145,12 @@ export default function JournalScreen() {
   const handleGetLocation = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") {
+      if (Platform.OS === "web") {
+        alert(
+          "Location permission is required to attach location. Please check your browser settings.",
+        );
+        return;
+      }
       Alert.alert(
         "Permission denied",
         "Location permission is required to attach location. Would you like to open settings?",
@@ -190,9 +211,12 @@ export default function JournalScreen() {
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
       >
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity
+          onPress={() => router.push("/tools")}
+          style={styles.backBtn}
+        >
           <Ionicons name="arrow-back" size={24} color={COLORS.sageGreen} />
-          <Text style={styles.backText}>Tools</Text>
+          <Text style={styles.backText}>Back to Tools</Text>
         </TouchableOpacity>
 
         <Text style={styles.mainTitle}>Mindful Journal</Text>
@@ -200,6 +224,21 @@ export default function JournalScreen() {
           Journaling helps clarify your thoughts, reduces stress, and allows you
           to track your personal growth over time.
         </Text>
+
+        <ImageBackground
+          source={journalHero}
+          style={styles.heroBanner}
+          imageStyle={styles.heroImage}
+        >
+          <View style={styles.heroOverlay}>
+            <Text style={styles.heroTitle}>
+              A softer place for your thoughts
+            </Text>
+            <Text style={styles.heroSubtitle}>
+              Warm reflections and mindful moments in each entry.
+            </Text>
+          </View>
+        </ImageBackground>
 
         {/* Inspirational Quote Card */}
         <View style={styles.quoteCard}>
@@ -296,6 +335,28 @@ export default function JournalScreen() {
                 key={item.id}
                 style={styles.historyCard}
                 onPress={() => {
+                  if (Platform.OS === "web") {
+                    const wantToDelete = window.confirm(
+                      "Do you want to delete this entry? (OK to Delete, Cancel to Edit)",
+                    );
+                    if (wantToDelete) {
+                      deleteDoc(doc(db, "journalEntries", item.id))
+                        .then(() => alert("Deleted successfully."))
+                        .catch(() => alert("Failed to delete."));
+                    } else {
+                      // On web, if they hit cancel on the delete prompt, we treat it as an edit request
+                      const wantToEdit = window.confirm(
+                        "Would you like to edit this entry into the input box above?",
+                      );
+                      if (wantToEdit) {
+                        setEntry(item.content || "");
+                        setImage(item.image || null);
+                        setLocationData(item.location || null);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }
+                    }
+                    return;
+                  }
                   Alert.alert("Entry Options", "What would you like to do?", [
                     {
                       text: "Edit",
@@ -332,6 +393,7 @@ export default function JournalScreen() {
                   <Image
                     source={{ uri: item.image }}
                     style={styles.historyImage}
+                    blurRadius={1}
                   />
                 )}
                 <Text style={styles.historyContent} numberOfLines={3}>
@@ -381,6 +443,34 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     lineHeight: 18,
     marginBottom: 20,
+  },
+  heroBanner: {
+    borderRadius: 24,
+    overflow: "hidden",
+    marginBottom: 20,
+    minHeight: 160,
+    justifyContent: "flex-end",
+  },
+  heroImage: {
+    flex: 1,
+    width: "100%",
+    resizeMode: "cover",
+    opacity: 0.95,
+  },
+  heroOverlay: {
+    backgroundColor: "rgba(0,0,0,0.22)",
+    padding: 18,
+  },
+  heroTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "white",
+    marginBottom: 6,
+  },
+  heroSubtitle: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.92)",
+    lineHeight: 20,
   },
   quoteCard: {
     backgroundColor: COLORS.sageGreen,
